@@ -1,0 +1,93 @@
+/*
+ * Core layout styles
+ *
+ * Moving styles out of the HTML improves readability and separates
+ * concerns.  The original file defined inline styles for the map and
+ * search elements【894404182387996†L43-L52】.  These rules have been extracted
+ * here and extended to provide a simple, modern look.
+ */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Use a flex column so the header stays at the top and the map fills the rest */
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header styling */
+header {
+  background-color: #f5f5f5;
+  padding: 12px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+header p {
+  margin: 8px 0 12px;
+  font-size: 0.875rem;
+  color: #555;
+}
+
+/* Search container layout */
+.search-container {
+  display: flex;
+  gap: 8px;
+  max-width: 480px;
+}
+
+/* Input styling */
+.search-container input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* Button styling */
+.search-container button {
+  padding: 8px 14px;
+  background-color: #007bff;
+  border: none;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.search-container button:hover {
+  background-color: #0056b3;
+}
+
+/* Map container fills the remaining vertical space */
+#map {
+  flex: 1;
+}
+
+/* Style for custom tooltips used on commune polygons */
+.custom-tooltip {
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  color: #000;
+  border-radius: 3px;
+}
+
+/* Highlight style applied dynamically from JavaScript */
+.highlight {
+  fill-color: #ff7800 !important;
+  color: #ff7800 !important;
+}
