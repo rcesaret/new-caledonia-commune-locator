@@ -5,7 +5,7 @@ Enter `lat,lng` or search by name (accent-insensitive). Uses precise point-in-po
 
 - **Live site:** https://rcesaret.github.io/nc-commune-locator/
 - **Tech:** Leaflet, leaflet-pip, vanilla JS
-- **Data:** `data/communes.geojson` (GeoJSON MultiPolygon features with `properties.name`)
+- **Data:** `data/nc-communes.geojson` (GeoJSON MultiPolygon features with `properties.name`)
 
 ## Directory layout
 
@@ -18,7 +18,7 @@ new-caledonia-commune-locator/
 │  └─ js/
 │     └─ app.js
 ├─ data/
-│  └─ communes.geojson
+│  └─ nc-communes.geojson
 ├─ LICENSE
 └─ README.md
 ```
