@@ -384,8 +384,35 @@ clearBtn.addEventListener("click", () => {
 });
 
 // Layer panel interactions
+function setLayerPanelCollapsed(collapsed) {
+  layerPanel.classList.toggle("collapsed", collapsed);
+  if (collapsed) {
+    layerPanel.setAttribute("aria-hidden", "true");
+  } else {
+    layerPanel.removeAttribute("aria-hidden");
+  }
+  const focusables = layerPanel.querySelectorAll(
+    "a, button, input, select, textarea, [tabindex]"
+  );
+  focusables.forEach((el) => {
+    if (collapsed) {
+          el.dataset.prevTab = el.getAttribute("tabindex");
+          el.setAttribute("tabindex", "-1");
+        }
+    else if (el.dataset.prevTab) {
+            el.setAttribute("tabindex", el.dataset.prevTab);
+            delete el.dataset.prevTab;
+          }
+    else {
+            el.removeAttribute("tabindex");
+          }
+
+  });
+}
+
 toggleLayerPanelBtn.addEventListener("click", () => {
-  layerPanel.classList.toggle("collapsed");
+  const collapsed = layerPanel.classList.contains("collapsed");
+  setLayerPanelCollapsed(!collapsed);
 });
 
 if (togglePolygons) {
@@ -459,8 +486,8 @@ function updateLabelPersistence() {
 toggleLabels.addEventListener("change", updateLabelPersistence);
 
 baseMapSelect.addEventListener("change", async () => {
+  if (baseMapSelect.disabled) return;
   const val = baseMapSelect.value;
-  if (darkMode) return; // ignore while dark mode active
   if (currentBase) map.removeLayer(currentBase);
   const layer = await baseLayers[val];
   currentBase = layer;
@@ -470,6 +497,19 @@ baseMapSelect.addEventListener("change", async () => {
 darkModeToggle?.addEventListener("change", async () => {
   darkMode = darkModeToggle.checked;
   document.body.classList.toggle("dark-mode", darkMode);
+  // Disable basemap select and provide feedback in dark mode
+  if (darkMode) {
+    baseMapSelect.disabled = true;
+    baseMapSelect.title = "Basemap selection is disabled in dark mode";
+  } else {
+    baseMapSelect.disabled = false;
+    baseMapSelect.title = "";
+  }
+
+  // Toggle dark mode class on Leaflet controls
+  document.querySelectorAll('.leaflet-control').forEach((ctrl) => {
+    ctrl.classList.toggle('leaflet-control-dark', darkMode);
+  });
   if (currentBase) map.removeLayer(currentBase);
   if (darkMode) {
     darkLayer = await baseLayers.dark;
@@ -512,7 +552,42 @@ addPointCoordBtn.addEventListener("click", () => {
 
 permalinkBtn.addEventListener("click", () => {
   const c = map.getCenter();
-  const url = `${location.origin}${location.pathname}#lat=${c.lat.toFixed(5)}&lon=${c.lng.toFixed(5)}`;
+  const zoom = map.getZoom();
+
+  // Get base layer name
+  let baseLayerName = "";
+  if (typeof baseLayers !== "undefined") {
+    for (const [name, layer] of Object.entries(baseLayers)) {
+      if (map.hasLayer(layer)) {
+        baseLayerName = name;
+        break;
+      }
+    }
+  }
+
+  // Get selected overlays
+  let activeOverlays = [];
+  if (typeof overlays !== "undefined") {
+    for (const [name, layer] of Object.entries(overlays)) {
+      if (map.hasLayer(layer)) {
+        activeOverlays.push(name);
+      }
+    }
+  }
+
+  const params = [
+    `lat=${c.lat.toFixed(5)}`,
+    `lon=${c.lng.toFixed(5)}`,
+    `zoom=${zoom}`,
+  ];
+  if (baseLayerName) {
+    params.push(`base=${encodeURIComponent(baseLayerName)}`);
+  }
+  if (activeOverlays.length > 0) {
+    params.push(`layers=${encodeURIComponent(activeOverlays.join(","))}`);
+  }
+
+  const url = `${location.origin}${location.pathname}#${params.join("&")}`;
   navigator.clipboard.writeText(url).then(
     () => {
       showToast("Permalink copied");
@@ -728,34 +803,70 @@ function dmsMatchToDecimal(match) {
   return dec;
 }
 
-function createPointAt(lat, lng) {
-  const label = prompt("Point label (optional)", "") || "";
-  const color = prompt("Marker color", "#ff0000") || "#ff0000";
-  let opacity = parseFloat(prompt("Opacity 0-1", "0.8"));
-  if (isNaN(opacity) || opacity < 0 || opacity > 1) {
-    alert("Invalid opacity value. Using default 0.8.");
-    opacity = 0.8;
+function showPointModal(lat, lng, onSubmit) {
+  let modal = document.getElementById("point-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "point-modal";
+    modal.style.cssText =
+      "position:fixed;top:0;left:0;width:100vw;height:100vh;" +
+      "background:rgba(0,0,0,0.3);display:flex;align-items:center;" +
+      "justify-content:center;z-index:10000;";
+    modal.innerHTML =
+      `<form id="point-modal-form" style="background:#fff;padding:20px;border-radius:8px;min-width:300px;box-shadow:0 2px 8px rgba(0,0,0,0.2)">
+          <h3>Create Point</h3>
+          <label>Label (optional):<br><input type="text" name="label" style="width:100%"></label><br><br>
+          <label>Marker color:<br><input type="color" name="color" value="#ff0000"></label><br><br>
+          <label>Opacity (0-1):<br><input type="number" name="opacity" min="0" max="1" step="0.01" value="0.8"></label><br><br>
+          <button type="submit">Create</button>
+          <button type="button" id="point-modal-cancel">Cancel</button>
+       </form>`;
+    document.body.appendChild(modal);
   }
-  const marker = L.circleMarker([lat, lng], {
-    color,
-    fillColor: color,
-    fillOpacity: opacity,
-    radius: 6,
-  }).addTo(pointsLayer);
-  marker.bindPopup(label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-  let communeName = null;
-  if (communeLayer) {
-    try {
-      const hits = leafletPip.pointInLayer([lng, lat], communeLayer, true);
-      if (hits.length) communeName = hits[0].feature?.properties?.name || null;
-    } catch (err) {
-      console.error("Point-in-polygon check failed:", err);
+  modal.style.display = "flex";
+
+  const form = modal.querySelector("#point-modal-form");
+  const cancelBtn = modal.querySelector("#point-modal-cancel");
+  form.onsubmit = function (e) {
+    e.preventDefault();
+    const label = form.label.value || "";
+    const color = form.color.value || "#ff0000";
+    let opacity = parseFloat(form.opacity.value);
+    if (isNaN(opacity) || opacity < 0 || opacity > 1) {
+      alert("Invalid opacity value. Using default 0.8.");
+      opacity = 0.8;
     }
-  }
-  points.push({
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [lng, lat] },
-    properties: { label, color, opacity, commune: communeName },
+    modal.style.display = "none";
+    onSubmit({ label, color, opacity });
+  };
+  cancelBtn.onclick = function () {
+    modal.style.display = "none";
+  };
+}
+
+function createPointAt(lat, lng) {
+  showPointModal(lat, lng, function ({ label, color, opacity }) {
+    const marker = L.circleMarker([lat, lng], {
+      color,
+      fillColor: color,
+      fillOpacity: opacity,
+      radius: 6,
+    }).addTo(pointsLayer);
+    marker.bindPopup(label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+    let communeName = null;
+    if (communeLayer) {
+      try {
+        const hits = leafletPip.pointInLayer([lng, lat], communeLayer, true);
+        if (hits.length) communeName = hits[0].feature?.properties?.name || null;
+      } catch (err) {
+        console.error("Point-in-polygon check failed:", err);
+      }
+    }
+    points.push({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [lng, lat] },
+      properties: { label, color, opacity, commune: communeName },
+    });
   });
 }
 
