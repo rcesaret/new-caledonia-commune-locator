@@ -19,6 +19,7 @@ let highlightLayer;
 let darkMode = false;
 let lazyLoading = false; // if true, polygons load only when needed
 
+let usingDMS = false;
 // Accessibility helper
 const a11y = document.getElementById('a11yMsg');
 if (a11y && !a11y.hasAttribute('aria-live')) {
@@ -131,6 +132,11 @@ function autoTab(e) {
  */
 async function loadCommuneLayer() {
   if (communeLayer) return communeLayer;
+  // Use embedded data if available to avoid fetch failures
+  if (typeof COMMUNES_DATA !== 'undefined') {
+    communeLayer = L.geoJSON(COMMUNES_DATA, { onEachFeature, style: defaultStyle }).addTo(map);
+    return communeLayer;
+  }
   try {
     // Attempt to fetch the local copy first.
     const localResp = await fetch('data/nc-communes.geojson');
@@ -245,11 +251,29 @@ async function locatePoint(lat, lon) {
  * (±180°) ranges.
  */
 function performSearch() {
-  const lonInput = document.getElementById('lonBox');
-  const latInput = document.getElementById('latBox');
   setA11yMsg('\u00A0');
-  const lon = parseFloat(lonInput.value);
-  const lat = parseFloat(latInput.value);
+  let lon, lat;
+  const lonBox = document.getElementById('lonBox');
+  const latBox = document.getElementById('latBox');
+  if (usingDMS) {
+    const lonInputs = document.querySelectorAll('[data-axis="lon"] input');
+    const latInputs = document.querySelectorAll('[data-axis="lat"] input');
+    if (lonInputs.length === 3 && latInputs.length === 3) {
+      lon = dms2dec([
+        parseFloat(lonInputs[0].value) || 0,
+        parseFloat(lonInputs[1].value) || 0,
+        parseFloat(lonInputs[2].value) || 0
+      ]);
+      lat = dms2dec([
+        parseFloat(latInputs[0].value) || 0,
+        parseFloat(latInputs[1].value) || 0,
+        parseFloat(latInputs[2].value) || 0
+      ]);
+    }
+  } else {
+    lon = parseFloat(lonBox.value);
+    lat = parseFloat(latBox.value);
+  }
   if (isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
     locatePoint(lat, lon);
   } else {
@@ -395,7 +419,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     performSearch();
   }
   // DMS/decimal toggle
-  let usingDMS = false;
   document.getElementById('toggleFormat').addEventListener('click', () => {
     const lonBox = document.getElementById('lonBox');
     const latBox = document.getElementById('latBox');
