@@ -80,10 +80,19 @@ function announce(msg) {
 // ---- Load GeoJSON ----
 function loadCommuneData() {
   return fetch(GEOJSON_URL)
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) {
+        throw new Error(`HTTP error! status: ${r.status}`);
+      }
+      return r.json();
+    })
     .catch(err => {
-      console.error('GeoJSON fetch failed:', err);
-      return (typeof COMMUNES_DATA !== 'undefined') ? COMMUNES_DATA : null;
+      console.warn('GeoJSON fetch failed, falling back to local data:', err);
+      if (typeof COMMUNES_DATA !== 'undefined') {
+        return COMMUNES_DATA;
+      }
+      // Re-throw if fallback is also unavailable to be handled by the caller.
+      throw new Error('Could not load GeoJSON data from network or local fallback.');
     });
 }
 
