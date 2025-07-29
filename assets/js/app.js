@@ -364,10 +364,10 @@ function dmsMatchToDecimal(match) {
   let dec = Math.abs(deg) + min / 60 + sec / 3600;
   // Determine sign: use sign of degrees if negative, otherwise direction
   if (deg < 0) {
-    dec = -dec;
-  } else {
-    if (dir === 'S' || dir === 'W') dec = -dec;
-  }
+      dec = -dec;
+    }
+  else if (dir === 'S' || dir === 'W') dec = -dec;
+
   // For E/W adjust longitude sign; this will be done by calling context; nothing further
   return dec;
 }
