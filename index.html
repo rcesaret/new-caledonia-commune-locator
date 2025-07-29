@@ -1,61 +1,143 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>New Caledonia Commune Locator</title>
-  <meta name="description" content="Enter coordinates or commune name to identify the municipality in New Caledonia. Leaflet + point‑in‑polygon (leaflet‑pip)." />
-  <meta name="robots" content="index,follow" />
-  <meta property="og:title" content="New Caledonia Commune Locator" />
-  <meta property="og:description" content="Enter coordinates to find the New Caledonia commune (municipality) and visualize its boundary." />
-  <meta property="og:type" content="website" />
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>New Caledonia Commune Locator</title>
+    <meta
+      name="description"
+      content="Enter coordinates or commune name to identify the municipality in New Caledonia. Leaflet + point‑in‑polygon (leaflet‑pip)."
+    />
+    <meta name="robots" content="index,follow" />
+    <meta property="og:title" content="New Caledonia Commune Locator" />
+    <meta
+      property="og:description"
+      content="Enter coordinates to find the New Caledonia commune (municipality) and visualize its boundary."
+    />
+    <meta property="og:type" content="website" />
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="libs/leaflet/leaflet.css" />
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="libs/leaflet/leaflet.css" />
 
-  <!-- App CSS -->
-  <link rel="stylesheet" href="assets/css/styles.css" />
+    <!-- App CSS -->
+    <link rel="stylesheet" href="assets/css/styles.css" />
 
-  <noscript>
-    <style>#map{display:none}.no-js{display:block;padding:1rem;margin:1rem;border:1px solid #bbb;background:#fffbe6}</style>
-  </noscript>
-</head>
-<body>
-  <div class="no-js" aria-live="polite" aria-atomic="true" hidden>
-    This application requires JavaScript to run. Please enable JavaScript and reload the page.
-  </div>
-
-  <!-- Layer & style panel -->
-  <div id="layerPanel" class="layer-panel" aria-label="Layer controls">
-    <button id="toggleLayerPanel" type="button" title="Collapse layer panel">&laquo;</button>
-    <div id="layerContent">
-      <h3>Layers</h3>
-      <label><input id="toggleLabels" type="checkbox" checked /> Commune labels</label>
-      <label><input id="togglePolygons" type="checkbox" checked /> Commune polygons</label>
-      <div class="style-group">
-        <label>Border <input id="borderColor" type="color" value="#228B22" /></label>
-        <label>Opacity <input id="borderOpacity" type="range" min="0" max="1" step="0.1" value="1" /></label>
-      </div>
-      <div class="style-group">
-        <label>Fill <input id="fillColor" type="color" value="#66BB66" /></label>
-        <label>Opacity <input id="fillOpacity" type="range" min="0" max="1" step="0.05" value="0.35" /></label>
-      </div>
-      <label>Basemap
-        <select id="baseMapSelect">
-          <option value="osm">OSM Default</option>
-          <option value="gmap">Google Map Default</option>
-          <option value="gsat">Google Satellite</option>
-          <option value="gter">Google Terrain</option>
-        </select>
-      </label>
-      <hr />
-      <button id="addPointBtn" type="button">Add Point</button>
-      <button id="exportPointsBtn" type="button">Export Points</button>
+    <noscript>
+      <style>
+        #map {
+          display: none;
+        }
+        .no-js {
+          display: block;
+          padding: 1rem;
+          margin: 1rem;
+          border: 1px solid #bbb;
+          background: #fffbe6;
+        }
+      </style>
+    </noscript>
+  </head>
+  <body>
+    <div class="no-js" aria-live="polite" aria-atomic="true" hidden>
+      This application requires JavaScript to run. Please enable JavaScript and
+      reload the page.
     </div>
-  </div>
 
-  <!-- Controls overlay -->
-  <!--
+    <!-- Layer & style panel -->
+    <div id="layerPanel" class="layer-panel" aria-label="Layer controls">
+      <button id="toggleLayerPanel" type="button" title="Collapse layer panel">
+        &laquo;
+      </button>
+      <div id="layerContent">
+        <h3>Layers</h3>
+        <label
+          ><input id="toggleLabels" type="checkbox" checked /> Commune
+          labels</label
+        >
+        <label
+          ><input id="togglePolygons" type="checkbox" checked /> Commune
+          polygons</label
+        >
+        <label><input id="darkModeToggle" type="checkbox" /> Dark mode</label>
+        <div class="style-group">
+          <label
+            >Border <input id="borderColor" type="color" value="#228B22"
+          /></label>
+          <label
+            >Opacity
+            <input
+              id="borderOpacity"
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value="1"
+          /></label>
+        </div>
+        <div class="style-group">
+          <label
+            >Fill <input id="fillColor" type="color" value="#66BB66"
+          /></label>
+          <label
+            >Opacity
+            <input
+              id="fillOpacity"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value="0.35"
+          /></label>
+        </div>
+        <div class="style-group">
+          <label
+            >Label color
+            <input id="labelTextColor" type="color" value="#111827"
+          /></label>
+          <label
+            >Size
+            <input id="labelTextSize" type="number" value="14" min="8" max="24"
+          /></label>
+        </div>
+        <div class="style-group">
+          <label
+            >Font <input id="labelFont" type="text" value="sans-serif"
+          /></label>
+          <label>Bg <input id="labelBg" type="checkbox" checked /></label>
+        </div>
+        <div class="style-group">
+          <label
+            >Bg color <input id="labelBgColor" type="color" value="#ffffff"
+          /></label>
+          <label
+            >Bg opacity
+            <input
+              id="labelBgOpacity"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value="1"
+          /></label>
+        </div>
+        <label
+          >Basemap
+          <select id="baseMapSelect">
+            <option value="osm">OSM Default</option>
+            <option value="gmap">Google Map Default</option>
+            <option value="gsat">Google Satellite</option>
+            <option value="gter">Google Terrain</option>
+            <option value="dark">Carto Dark</option>
+          </select>
+        </label>
+        <hr />
+        <button id="addPointBtn" type="button">Add Point</button>
+        <button id="exportPointsBtn" type="button">Export Points</button>
+      </div>
+    </div>
+
+    <!-- Controls overlay -->
+    <!--
     The controls panel hosts four coordinate input modes as well as locate/clear actions.
     Modes:
       - Single decimal (lat,lng comma separated + commune name search fallback)
@@ -63,67 +145,212 @@
       - DMS boxes (lat and lon broken into degrees/minutes/seconds)
       - Single DMS (copy‑paste from Google Maps like "20°44'19.7"S 164°47'41.6"E")
   -->
-  <div id="controls" role="region" aria-label="Search controls">
-    <div id="modeButtons" class="mode-buttons" role="radiogroup" aria-label="Coordinate input modes">
-      <button id="modeSingleDecBtn" type="button" class="mode-btn" aria-pressed="true" title="Single decimal input mode">Dec (1)</button>
-      <button id="modeDualDecBtn" type="button" class="mode-btn" aria-pressed="false" title="Dual decimal input mode">Dec (2)</button>
-      <button id="modeDMSBoxesBtn" type="button" class="mode-btn" aria-pressed="false" title="DMS boxes input mode">DMS Boxes</button>
-      <button id="modeSingleDmsBtn" type="button" class="mode-btn" aria-pressed="false" title="Single DMS string input mode">DMS (1)</button>
-    </div>
-
-    <!-- Single decimal input (lat,lng or commune name) -->
-    <div id="singleDecInputs" class="mode-inputs">
-      <input id="singleDecInput" type="text" inputmode="text" placeholder="lat,lng or commune name" aria-label="Enter lat,lng or commune name" />
-    </div>
-
-    <!-- Dual decimal input (two numeric fields + flip) -->
-    <div id="dualDecInputs" class="mode-inputs" hidden>
-      <input id="latDecInput" type="number" inputmode="decimal" placeholder="Latitude" aria-label="Latitude (decimal degrees)" />
-      <input id="lonDecInput" type="number" inputmode="decimal" placeholder="Longitude" aria-label="Longitude (decimal degrees)" />
-      <button id="flipDecBtn" type="button" title="Flip latitude and longitude values">Flip</button>
-    </div>
-
-    <!-- DMS boxes input (lat deg/min/sec, lon deg/min/sec) -->
-    <div id="dmsBoxesInputs" class="mode-inputs" hidden>
-      <div class="dms-group" aria-label="Latitude DMS inputs">
-        <input id="latDMSDeg" type="number" step="any" placeholder="Lat°" aria-label="Latitude degrees" />
-        <input id="latDMSMin" type="number" step="any" placeholder="Lat′" aria-label="Latitude minutes" />
-        <input id="latDMSSec" type="number" step="any" placeholder="Lat″" aria-label="Latitude seconds" />
+    <div id="controls" role="region" aria-label="Search controls">
+      <div
+        id="modeButtons"
+        class="mode-buttons"
+        role="radiogroup"
+        aria-label="Coordinate input modes"
+      >
+        <button
+          id="modeSingleDecBtn"
+          type="button"
+          class="mode-btn"
+          aria-pressed="true"
+          title="Single decimal input mode"
+        >
+          Dec (1)
+        </button>
+        <button
+          id="modeDualDecBtn"
+          type="button"
+          class="mode-btn"
+          aria-pressed="false"
+          title="Dual decimal input mode"
+        >
+          Dec (2)
+        </button>
+        <button
+          id="modeDMSBoxesBtn"
+          type="button"
+          class="mode-btn"
+          aria-pressed="false"
+          title="DMS boxes input mode"
+        >
+          DMS Boxes
+        </button>
+        <button
+          id="modeSingleDmsBtn"
+          type="button"
+          class="mode-btn"
+          aria-pressed="false"
+          title="Single DMS string input mode"
+        >
+          DMS (1)
+        </button>
       </div>
-      <div class="dms-group" aria-label="Longitude DMS inputs">
-        <input id="lonDMSDeg" type="number" step="any" placeholder="Lon°" aria-label="Longitude degrees" />
-        <input id="lonDMSMin" type="number" step="any" placeholder="Lon′" aria-label="Longitude minutes" />
-        <input id="lonDMSSec" type="number" step="any" placeholder="Lon″" aria-label="Longitude seconds" />
+
+      <!-- Single decimal input (lat,lng or commune name) -->
+      <div id="singleDecInputs" class="mode-inputs">
+        <input
+          id="singleDecInput"
+          type="text"
+          inputmode="text"
+          placeholder="lat,lng or commune name"
+          aria-label="Enter lat,lng or commune name"
+        />
+      </div>
+
+      <!-- Dual decimal input (two numeric fields + flip) -->
+      <div id="dualDecInputs" class="mode-inputs" hidden>
+        <input
+          id="latDecInput"
+          type="number"
+          inputmode="decimal"
+          placeholder="Latitude"
+          aria-label="Latitude (decimal degrees)"
+        />
+        <input
+          id="lonDecInput"
+          type="number"
+          inputmode="decimal"
+          placeholder="Longitude"
+          aria-label="Longitude (decimal degrees)"
+        />
+        <button
+          id="flipDecBtn"
+          type="button"
+          title="Flip latitude and longitude values"
+        >
+          Flip
+        </button>
+      </div>
+
+      <!-- DMS boxes input (lat deg/min/sec, lon deg/min/sec) -->
+      <div id="dmsBoxesInputs" class="mode-inputs" hidden>
+        <div class="dms-group" aria-label="Latitude DMS inputs">
+          <input
+            id="latDMSDeg"
+            type="number"
+            step="any"
+            placeholder="Lat°"
+            aria-label="Latitude degrees"
+          />
+          <input
+            id="latDMSMin"
+            type="number"
+            step="any"
+            placeholder="Lat′"
+            aria-label="Latitude minutes"
+          />
+          <input
+            id="latDMSSec"
+            type="number"
+            step="any"
+            placeholder="Lat″"
+            aria-label="Latitude seconds"
+          />
+        </div>
+        <div class="dms-group" aria-label="Longitude DMS inputs">
+          <input
+            id="lonDMSDeg"
+            type="number"
+            step="any"
+            placeholder="Lon°"
+            aria-label="Longitude degrees"
+          />
+          <input
+            id="lonDMSMin"
+            type="number"
+            step="any"
+            placeholder="Lon′"
+            aria-label="Longitude minutes"
+          />
+          <input
+            id="lonDMSSec"
+            type="number"
+            step="any"
+            placeholder="Lon″"
+            aria-label="Longitude seconds"
+          />
+        </div>
+      </div>
+
+      <!-- Single DMS string input (e.g. 20°44'19.7"S 164°47'41.6"E) -->
+      <div id="singleDmsInputContainer" class="mode-inputs" hidden>
+        <input
+          id="singleDmsInput"
+          type="text"
+          inputmode="text"
+          placeholder="20°44'19.7&quot;S 164°47'41.6&quot;E"
+          aria-label="Enter DMS coordinates string"
+        />
+      </div>
+
+      <button
+        id="locateBtn"
+        type="button"
+        title="Locate coordinates or search by name"
+      >
+        Locate
+      </button>
+      <button
+        id="addPointCoordBtn"
+        type="button"
+        title="Add point using entered coordinates"
+      >
+        Add Point
+      </button>
+      <button id="clearBtn" type="button" title="Clear selections and inputs">
+        Clear
+      </button>
+      <button id="permalinkBtn" type="button" title="Copy permalink">
+        Permalink
+      </button>
+      <span id="status" class="sr-only" aria-live="polite"></span>
+    </div>
+
+    <!-- Map container -->
+    <div id="map" role="region" aria-label="New Caledonia commune map"></div>
+
+    <div id="infoBubble" class="info-bubble">
+      <button id="toggleInfo" type="button">INFO &amp; USER GUIDE</button>
+      <div id="infoContent" hidden>
+        <p>
+          Locate communes by entering coordinates or clicking the map. Style
+          polygon borders and labels, add custom points and export them as
+          GeoJSON.
+        </p>
+        <ul>
+          <li>Toggle dark mode and switch base maps.</li>
+          <li>Customize label text color, size and background.</li>
+          <li>Copy a permalink to share the current view.</li>
+        </ul>
+        <p class="credits">
+          Created by Rudolf Cesaretti &amp; Maja Canavan —
+          <a
+            href="https://github.com/rcesaret/new-caledonia-commune-locator"
+            target="_blank"
+            >GitHub</a
+          >
+        </p>
       </div>
     </div>
 
-    <!-- Single DMS string input (e.g. 20°44'19.7"S 164°47'41.6"E) -->
-    <div id="singleDmsInputContainer" class="mode-inputs" hidden>
-      <input id="singleDmsInput" type="text" inputmode="text" placeholder="20°44'19.7&quot;S 164°47'41.6&quot;E" aria-label="Enter DMS coordinates string" />
-    </div>
+    <!-- Leaflet JS -->
+    <script src="libs/leaflet/leaflet.js"></script>
+    <!-- leaflet-pip for point-in-polygon -->
+    <script src="libs/leaflet-pip/leaflet-pip.min.js"></script>
 
-    <button id="locateBtn" type="button" title="Locate coordinates or search by name">Locate</button>
-    <button id="clearBtn" type="button" title="Clear selections and inputs">Clear</button>
-    <span id="status" class="sr-only" aria-live="polite"></span>
-  </div>
+    <!-- GeoJSON fallback data for offline use -->
+    <script defer src="assets/js/communes.js"></script>
 
-  <!-- Map container -->
-  <div id="map" role="region" aria-label="New Caledonia commune map"></div>
+    <!-- App JS -->
+    <script defer src="assets/js/app.js"></script>
 
-  <!-- Leaflet JS -->
-  <script src="libs/leaflet/leaflet.js"></script>
-  <!-- leaflet-pip for point-in-polygon -->
-  <script src="libs/leaflet-pip/leaflet-pip.min.js"></script>
-
-  <!-- GeoJSON fallback data for offline use -->
-  <script defer src="assets/js/communes.js"></script>
-
-  <!-- App JS -->
-  <script defer src="assets/js/app.js"></script>
-
-  <script>
-    // Hide the no-JS warning now that JS is executing
-    document.querySelector('.no-js')?.setAttribute('hidden', 'hidden');
-  </script>
-</body>
+    <script>
+      // Hide the no-JS warning now that JS is executing
+      document.querySelector(".no-js")?.setAttribute("hidden", "hidden");
+    </script>
+  </body>
 </html>
