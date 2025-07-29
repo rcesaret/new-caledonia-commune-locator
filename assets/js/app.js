@@ -42,7 +42,24 @@ async function createTileLayer() {
 
 // ---- Map ----
 const map = L.map('map', { zoomControl: true }).setView(MAP_CENTER, MAP_ZOOM);
-createTileLayer().then(layer => layer.addTo(map));
+let currentBase = null;
+const baseLayers = {
+  osm: createTileLayer(),
+  gmap: Promise.resolve(L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
+  })),
+  gsat: Promise.resolve(L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
+  })),
+  gter: Promise.resolve(L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+    subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
+  }))
+};
+
+baseLayers.osm.then(layer => {
+  currentBase = layer;
+  layer.addTo(map);
+});
 
 let communeLayer = null;
 let activeMarker = null;
@@ -118,6 +135,7 @@ loadCommuneData().then(fc => {
         });
       }
     }).addTo(map);
+    updateCommuneStyle();
   })
   .catch(err => {
     console.error('GeoJSON load error:', err);
@@ -152,6 +170,19 @@ const singleDmsInput  = document.getElementById('singleDmsInput');
 
 const locateBtn = document.getElementById('locateBtn');
 const clearBtn  = document.getElementById('clearBtn');
+
+// Layer panel elements
+const layerPanel = document.getElementById('layerPanel');
+const toggleLayerPanelBtn = document.getElementById('toggleLayerPanel');
+const toggleLabels = document.getElementById('toggleLabels');
+const togglePolygons = document.getElementById('togglePolygons');
+const borderColorInput = document.getElementById('borderColor');
+const borderOpacityInput = document.getElementById('borderOpacity');
+const fillColorInput = document.getElementById('fillColor');
+const fillOpacityInput = document.getElementById('fillOpacity');
+const baseMapSelect = document.getElementById('baseMapSelect');
+const addPointBtn = document.getElementById('addPointBtn');
+const exportPointsBtn = document.getElementById('exportPointsBtn');
 
 // Mode identifiers
 const MODE_SINGLE_DEC  = 'singleDec';
@@ -235,6 +266,69 @@ locateBtn.addEventListener('click', handleLocate);
 clearBtn.addEventListener('click', () => {
   clearInputs();
   clearSelection();
+});
+
+// Layer panel interactions
+toggleLayerPanelBtn.addEventListener('click', () => {
+  layerPanel.classList.toggle('collapsed');
+});
+
+if (togglePolygons) {
+  togglePolygons.addEventListener('change', () => {
+    if (!communeLayer) return;
+    if (togglePolygons.checked) communeLayer.addTo(map); else map.removeLayer(communeLayer);
+  });
+}
+
+function updateCommuneStyle() {
+  if (!communeLayer) return;
+  communeLayer.setStyle({
+    color: borderColorInput.value,
+    opacity: parseFloat(borderOpacityInput.value),
+    weight: 1.6,
+    fillColor: fillColorInput.value,
+    fillOpacity: parseFloat(fillOpacityInput.value)
+  });
+}
+[borderColorInput, borderOpacityInput, fillColorInput, fillOpacityInput].forEach(el => {
+  el && el.addEventListener('input', updateCommuneStyle);
+});
+
+toggleLabels.addEventListener('change', () => {
+  if (!communeLayer) return;
+  communeLayer.eachLayer(l => {
+    if (toggleLabels.checked) {
+      const name = l.feature?.properties?.name || '';
+      l.bindTooltip(name, {direction:'center', className:'custom-tooltip'});
+    } else {
+      l.unbindTooltip();
+    }
+  });
+});
+
+baseMapSelect.addEventListener('change', async () => {
+  const val = baseMapSelect.value;
+  if (currentBase) map.removeLayer(currentBase);
+  const layer = await baseLayers[val];
+  currentBase = layer;
+  layer.addTo(map);
+});
+
+addPointBtn.addEventListener('click', () => {
+  addingPoint = !addingPoint;
+  addPointBtn.classList.toggle('active', addingPoint);
+  if (addingPoint) showToast('Click on the map to add a point');
+});
+
+exportPointsBtn.addEventListener('click', () => {
+  const fc = { type: 'FeatureCollection', features: points };
+  const blob = new Blob([JSON.stringify(fc, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'points.geojson';
+  a.click();
+  URL.revokeObjectURL(url);
 });
 
 function clearInputs() {
@@ -420,8 +514,40 @@ function dmsMatchToDecimal(match) {
   return dec;
 }
 
-// Click-to-identify on map: drop marker
-map.on('click', (e) => identifyAt(e.latlng.lat, e.latlng.lng, true));
+// Click handler: either add point or identify commune
+let addingPoint = false;
+const pointsLayer = L.layerGroup().addTo(map);
+const points = [];
+map.on('click', (e) => {
+  if (addingPoint) {
+    addingPoint = false;
+    addPointBtn.classList.remove('active');
+    const label = prompt('Point label (optional)', '') || '';
+    const color = prompt('Marker color', '#ff0000') || '#ff0000';
+    const opacity = parseFloat(prompt('Opacity 0-1', '0.8'));
+    const marker = L.circleMarker(e.latlng, {
+      color,
+      fillColor: color,
+      fillOpacity: isNaN(opacity) ? 0.8 : opacity,
+      radius: 6
+    }).addTo(pointsLayer);
+    marker.bindPopup(label || `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
+    let communeName = null;
+    if (communeLayer) {
+      try {
+        const hits = leafletPip.pointInLayer([e.latlng.lng, e.latlng.lat], communeLayer, true);
+        if (hits.length) communeName = hits[0].feature?.properties?.name || null;
+      } catch {}
+    }
+    points.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [e.latlng.lng, e.latlng.lat] },
+      properties: { label, color, opacity: isNaN(opacity) ? 0.8 : opacity, commune: communeName }
+    });
+  } else {
+    identifyAt(e.latlng.lat, e.latlng.lng, true);
+  }
+});
 
 // ENHANCED: Identify commune at given lat/lng with improved marker visibility
 function identifyAt(lat, lng, dropMarker = false) {

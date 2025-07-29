@@ -25,6 +25,35 @@
     This application requires JavaScript to run. Please enable JavaScript and reload the page.
   </div>
 
+  <!-- Layer & style panel -->
+  <div id="layerPanel" class="layer-panel" aria-label="Layer controls">
+    <button id="toggleLayerPanel" type="button" title="Collapse layer panel">&laquo;</button>
+    <div id="layerContent">
+      <h3>Layers</h3>
+      <label><input id="toggleLabels" type="checkbox" checked /> Commune labels</label>
+      <label><input id="togglePolygons" type="checkbox" checked /> Commune polygons</label>
+      <div class="style-group">
+        <label>Border <input id="borderColor" type="color" value="#228B22" /></label>
+        <label>Opacity <input id="borderOpacity" type="range" min="0" max="1" step="0.1" value="1" /></label>
+      </div>
+      <div class="style-group">
+        <label>Fill <input id="fillColor" type="color" value="#66BB66" /></label>
+        <label>Opacity <input id="fillOpacity" type="range" min="0" max="1" step="0.05" value="0.35" /></label>
+      </div>
+      <label>Basemap
+        <select id="baseMapSelect">
+          <option value="osm">OSM Default</option>
+          <option value="gmap">Google Map Default</option>
+          <option value="gsat">Google Satellite</option>
+          <option value="gter">Google Terrain</option>
+        </select>
+      </label>
+      <hr />
+      <button id="addPointBtn" type="button">Add Point</button>
+      <button id="exportPointsBtn" type="button">Export Points</button>
+    </div>
+  </div>
+
   <!-- Controls overlay -->
   <!--
     The controls panel hosts four coordinate input modes as well as locate/clear actions.

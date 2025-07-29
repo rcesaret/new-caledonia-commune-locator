@@ -2,6 +2,7 @@
 
 Leaflet-based web app to identify the **commune (municipality)** of New Caledonia for any coordinate.
 Enter `lat,lng` or search by name (accent-insensitive). Uses precise point-in-polygon via `leaflet-pip`.
+The app now includes a layer panel to toggle commune styling, switch base maps and add custom points.
 
 - **Live site:** https://rcesaret.github.io/nc-commune-locator/
 - **Tech:** Leaflet, leaflet-pip, vanilla JS
@@ -34,6 +35,7 @@ python -m http.server 8000
 * Enter coordinates as `-21.5, 165.5` (decimal degrees); the app returns the commune via point-in-polygon.
 * Or type a commune name (case/diacritic-insensitive) to zoom and popup the boundary.
 * Use the 🐌 button to toggle lazy loading of commune polygons.
+* Open the layer panel (left) to style commune borders/fill, switch basemaps and add custom points. Points can be exported as GeoJSON.
 
 ## Development Notes
 
