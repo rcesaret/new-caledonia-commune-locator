@@ -524,11 +524,15 @@ map.on('click', (e) => {
     addPointBtn.classList.remove('active');
     const label = prompt('Point label (optional)', '') || '';
     const color = prompt('Marker color', '#ff0000') || '#ff0000';
-    const opacity = parseFloat(prompt('Opacity 0-1', '0.8'));
+    let opacity = parseFloat(prompt('Opacity 0-1', '0.8'));
+    if (isNaN(opacity) || opacity < 0 || opacity > 1) {
+      alert('Invalid opacity value. Using default 0.8.');
+      opacity = 0.8;
+    }
     const marker = L.circleMarker(e.latlng, {
       color,
       fillColor: color,
-      fillOpacity: isNaN(opacity) ? 0.8 : opacity,
+      fillOpacity: opacity,
       radius: 6
     }).addTo(pointsLayer);
     marker.bindPopup(label || `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
