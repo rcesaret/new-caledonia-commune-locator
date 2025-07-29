@@ -292,10 +292,39 @@ modeDualDecBtn.addEventListener("click", () => setMode(MODE_DUAL_DEC));
 modeDMSBoxesBtn.addEventListener("click", () => setMode(MODE_DMS_BOXES));
 modeSingleDmsBtn.addEventListener("click", () => setMode(MODE_SINGLE_DMS));
 
-function autoTab(curr, next, maxLen) {
-  if (!curr || !next) return;
-  curr.addEventListener("input", () => {
-    if (curr.value && curr.value.length >= maxLen) next.focus();
+function autoTab(curr, next, maxLen, prev = null) {
+  if (!curr) return;
+  // Forward tabbing
+  curr.addEventListener("input", (e) => {
+    // Only auto-advance if:
+    // - input is at maxLen
+    // - cursor is at the end
+    // - no text is selected
+    if (
+      curr.value &&
+      curr.value.length >= maxLen &&
+      curr.selectionStart === curr.value.length &&
+      curr.selectionEnd === curr.value.length
+    ) {
+      if (next) next.focus();
+    }
+  });
+
+  // Backward tabbing on backspace at start
+  curr.addEventListener("keydown", (e) => {
+    if (
+      e.key === "Backspace" &&
+      curr.selectionStart === 0 &&
+      curr.selectionEnd === 0 &&
+      prev
+    ) {
+      prev.focus();
+      // Optionally, move cursor to end of previous input
+      if (typeof prev.value === "string") {
+        prev.setSelectionRange(prev.value.length, prev.value.length);
+      }
+      e.preventDefault();
+    }
   });
 }
 autoTab(latDMSDeg, latDMSMin, 2);
