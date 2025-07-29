@@ -185,7 +185,7 @@ function searchByName(raw) {
     return;
   }
 
-  const name = matchLayer.feature.properties.name;
+  const {name} = matchLayer.feature.properties;
   map.fitBounds(matchLayer.getBounds());
   matchLayer.bindPopup(`Commune: ${name}`).openPopup();
   announce(`Found commune: ${name}`);
