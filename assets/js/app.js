@@ -19,6 +19,21 @@ let highlightLayer;
 let darkMode = false;
 let lazyLoading = false; // if true, polygons load only when needed
 
+// Accessibility helper
+const a11y = document.getElementById('a11yMsg');
+if (a11y && !a11y.hasAttribute('aria-live')) {
+  a11y.setAttribute('aria-live', 'polite');
+}
+if (!window._a11yMsgTimeout) window._a11yMsgTimeout = null;
+function setA11yMsg(msg) {
+  if (window._a11yMsgTimeout) clearTimeout(window._a11yMsgTimeout);
+  // Clear the message first to ensure screen readers re-announce repeated messages
+  if (a11y) a11y.textContent = '';
+  window._a11yMsgTimeout = setTimeout(() => {
+    if (a11y) a11y.textContent = msg;
+  }, 100); // Shorter delay to minimize perceived lag
+}
+
 // A lookup table mapping normalised commune names (lowercase with
 // apostrophes removed) to their corresponding Wikipedia pages.  When
 // clicking a commune polygon the map will show its name and a link to
@@ -163,7 +178,7 @@ function defaultStyle() {
  */
 function handleLoadError(err) {
   console.error(err);
-  document.getElementById('a11yMsg').textContent = 'Unable to load commune boundaries';
+  setA11yMsg('Unable to load commune boundaries');
 }
 
 /**
@@ -219,7 +234,7 @@ async function locatePoint(lat, lon) {
     // Zoom map to bounds of highlighted area
     map.fitBounds(highlightLayer.getBounds());
   } else {
-    document.getElementById('a11yMsg').textContent = 'No commune found at this location';
+    setA11yMsg('No commune found at this location');
   }
 }
 
@@ -232,14 +247,13 @@ async function locatePoint(lat, lon) {
 function performSearch() {
   const lonInput = document.getElementById('lonBox');
   const latInput = document.getElementById('latBox');
-  const a11y = document.getElementById('a11yMsg');
-  a11y.textContent = '';
+  setA11yMsg('\u00A0');
   const lon = parseFloat(lonInput.value);
   const lat = parseFloat(latInput.value);
   if (isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
     locatePoint(lat, lon);
   } else {
-    a11y.textContent = 'Coordinates out of range';
+    setA11yMsg('Coordinates out of range');
   }
 }
 
@@ -303,15 +317,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (lazyBtn) {
     lazyBtn.addEventListener('click', () => {
       lazyLoading = !lazyLoading;
-      const a11y = document.getElementById('a11yMsg');
       if (lazyLoading) {
         if (communeLayer) map.removeLayer(communeLayer);
-        a11y.textContent = 'Lazy loading enabled.';
+        setA11yMsg('Lazy loading enabled.');
       } else if (communeLayer) {
-        a11y.textContent = 'Lazy loading disabled.';
+        setA11yMsg('Lazy loading disabled.');
         map.addLayer(communeLayer);
       } else {
-        a11y.textContent = 'Lazy loading disabled.';
+        setA11yMsg('Lazy loading disabled.');
         loadCommuneLayer().catch((err) => {
           handleLoadError(err);
         });
