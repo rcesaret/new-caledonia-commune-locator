@@ -175,6 +175,32 @@ html, body, #map {
   inset: 0;
 }
 
+/* Layer panel */
+.layer-panel {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1001;
+  background: #ffffff;
+  padding: 8px 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+  max-width: 200px;
+}
+.layer-panel.collapsed #layerContent {
+  display: none;
+}
+.layer-panel button#toggleLayerPanel {
+  float: right;
+  font-size: 14px;
+  margin-left: 4px;
+}
+.style-group {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0;
+}
+
 /* Tooltip style override */
 .leaflet-tooltip.custom-tooltip {
   background: #ffffff;
