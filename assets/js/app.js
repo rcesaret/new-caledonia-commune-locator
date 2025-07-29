@@ -13,50 +13,70 @@
 
 // ---- Configuration ----
 const MAP_CENTER = [-21.5, 165.5];
-const MAP_ZOOM   = 8;
-const GEOJSON_URL = 'data/nc-communes.geojson';
+const MAP_ZOOM = 8;
+const GEOJSON_URL = "data/nc-communes.geojson";
 const OFFLINE_TILE =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wIAAgUBBu/q6QAAAABJRU5ErkJggg==';
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wIAAgUBBu/q6QAAAABJRU5ErkJggg==";
 
 // Attempt to create a tile layer from OpenStreetMap. Fallback to a blank tile
 // if network access is blocked.
 async function createTileLayer() {
   try {
-    const resp = await fetch('https://tile.openstreetmap.org/0/0/0.png', {
-      mode: 'no-cors',
-      signal: AbortSignal.timeout(5000) // 5-second timeout
+    const resp = await fetch("https://tile.openstreetmap.org/0/0/0.png", {
+      mode: "no-cors",
+      signal: AbortSignal.timeout(5000), // 5-second timeout
     });
     // For 'no-cors', a successful network request results in an 'opaque' response.
-    if (resp.type === 'opaque') {
-      return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    if (resp.type === "opaque") {
+      return L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
-        attribution: '\u00A9 OpenStreetMap contributors'
+        attribution: "\u00A9 OpenStreetMap contributors",
       });
     }
     console.warn(`Unexpected response from tile server: type ${resp.type}`);
   } catch (err) {
-    console.warn('Tile server unreachable, using offline tile:', err.message);
+    console.warn("Tile server unreachable, using offline tile:", err.message);
   }
-  return L.tileLayer(OFFLINE_TILE, { maxZoom: 19, attribution: '' });
+  return L.tileLayer(OFFLINE_TILE, { maxZoom: 19, attribution: "" });
 }
 
 // ---- Map ----
-const map = L.map('map', { zoomControl: true }).setView(MAP_CENTER, MAP_ZOOM);
+const map = L.map("map", { zoomControl: true }).setView(MAP_CENTER, MAP_ZOOM);
 let currentBase = null;
+let darkLayer = null;
+let darkMode = false;
 const baseLayers = {
   osm: createTileLayer(),
-  gmap: Promise.resolve(L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-    subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
-  })),
-  gsat: Promise.resolve(L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-    subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
-  })),
-  gter: Promise.resolve(L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
-    subdomains: ['mt0','mt1','mt2','mt3'], maxZoom: 20
-  }))
+  gmap: Promise.resolve(
+    L.tileLayer("https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}", {
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      maxZoom: 20,
+    }),
+  ),
+  gsat: Promise.resolve(
+    L.tileLayer("https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}", {
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      maxZoom: 20,
+    }),
+  ),
+  gter: Promise.resolve(
+    L.tileLayer("https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}", {
+      subdomains: ["mt0", "mt1", "mt2", "mt3"],
+      maxZoom: 20,
+    }),
+  ),
+  dark: Promise.resolve(
+    L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap &copy;Carto",
+      },
+    ),
+  ),
 };
 
-baseLayers.osm.then(layer => {
+baseLayers.osm.then((layer) => {
   currentBase = layer;
   layer.addTo(map);
 });
@@ -66,129 +86,162 @@ let activeMarker = null;
 
 // Custom red marker icon for coordinate entries
 const coordinateMarkerIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 // Normalization helper (remove diacritics, lowercase)
-const normalize = (s) => (s || '')
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
-  .toLowerCase();
+const normalize = (s) =>
+  (s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
 // Lightweight toast utility
 function showToast(msg, ms = 2800) {
-  const el = document.createElement('div');
-  el.className = 'toast';
+  const el = document.createElement("div");
+  el.className = "toast";
   el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => { el.remove(); }, ms);
+  setTimeout(() => {
+    el.remove();
+  }, ms);
 }
 
 // Announce to screen readers
 function announce(msg) {
-  const status = document.getElementById('status');
+  const status = document.getElementById("status");
   if (status) status.textContent = msg;
 }
 // ---- Load GeoJSON ----
 function loadCommuneData() {
   return fetch(GEOJSON_URL)
-    .then(r => r.json())
-    .catch(err => {
-      console.error('GeoJSON fetch failed:', err);
-      return (typeof COMMUNES_DATA !== 'undefined') ? COMMUNES_DATA : null;
+    .then((r) => r.json())
+    .catch((err) => {
+      console.error("GeoJSON fetch failed:", err);
+      return typeof COMMUNES_DATA !== "undefined" ? COMMUNES_DATA : null;
     });
 }
 
-loadCommuneData().then(fc => {
+loadCommuneData()
+  .then((fc) => {
     if (!fc || !Array.isArray(fc.features)) {
-      showToast('Failed to parse communes data.');
+      showToast("Failed to parse communes data.");
       return;
     }
     if (fc.features.length === 0) {
-      showToast('No commune polygons found — load the dataset to enable lookups.');
+      showToast(
+        "No commune polygons found — load the dataset to enable lookups.",
+      );
     }
 
     communeLayer = L.geoJSON(fc, {
       style: () => ({
-        color: '#228B22',       // border
+        color: "#228B22", // border
         weight: 1.6,
-        fillColor: '#66BB66',   // fill
-        fillOpacity: 0.35
+        fillColor: "#66BB66", // fill
+        fillOpacity: 0.35,
       }),
       onEachFeature: (feature, layer) => {
-        const name = feature?.properties?.name || 'Unknown commune';
-        layer.bindTooltip(name, { direction: 'center', className: 'custom-tooltip' });
+        const name = feature?.properties?.name || "Unknown commune";
+        layer.bindTooltip(name, {
+          direction: "center",
+          className: "custom-tooltip",
+          permanent: toggleLabels.checked,
+        });
         layer.on({
           mouseover: (e) => {
             const l = e.target;
-            l.setStyle({ fillColor: '#FFD54F', color: '#FB8C00', weight: 2.2, fillOpacity: 0.55 });
-            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) l.bringToFront();
+            l.setStyle({
+              fillColor: "#FFD54F",
+              color: "#FB8C00",
+              weight: 2.2,
+              fillOpacity: 0.55,
+            });
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge)
+              l.bringToFront();
           },
           mouseout: (e) => {
             communeLayer.resetStyle(e.target);
-          }
+          },
         });
-      }
+      },
     }).addTo(map);
     updateCommuneStyle();
+    updateLabelStyle();
+    updateLabelPersistence();
   })
-  .catch(err => {
-    console.error('GeoJSON load error:', err);
-    showToast('Error loading communes data.');
+  .catch((err) => {
+    console.error("GeoJSON load error:", err);
+    showToast("Error loading communes data.");
   });
 
 // ---- DOM references ----
 // Mode buttons
-const modeSingleDecBtn  = document.getElementById('modeSingleDecBtn');
-const modeDualDecBtn    = document.getElementById('modeDualDecBtn');
-const modeDMSBoxesBtn   = document.getElementById('modeDMSBoxesBtn');
-const modeSingleDmsBtn  = document.getElementById('modeSingleDmsBtn');
+const modeSingleDecBtn = document.getElementById("modeSingleDecBtn");
+const modeDualDecBtn = document.getElementById("modeDualDecBtn");
+const modeDMSBoxesBtn = document.getElementById("modeDMSBoxesBtn");
+const modeSingleDmsBtn = document.getElementById("modeSingleDmsBtn");
 
 // Input containers
-const singleDecInputs       = document.getElementById('singleDecInputs');
-const dualDecInputs         = document.getElementById('dualDecInputs');
-const dmsBoxesInputs        = document.getElementById('dmsBoxesInputs');
-const singleDmsInputContainer = document.getElementById('singleDmsInputContainer');
+const singleDecInputs = document.getElementById("singleDecInputs");
+const dualDecInputs = document.getElementById("dualDecInputs");
+const dmsBoxesInputs = document.getElementById("dmsBoxesInputs");
+const singleDmsInputContainer = document.getElementById(
+  "singleDmsInputContainer",
+);
 
 // Input fields
-const singleDecInput  = document.getElementById('singleDecInput');
-const latDecInput     = document.getElementById('latDecInput');
-const lonDecInput     = document.getElementById('lonDecInput');
-const flipDecBtn      = document.getElementById('flipDecBtn');
-const latDMSDeg       = document.getElementById('latDMSDeg');
-const latDMSMin       = document.getElementById('latDMSMin');
-const latDMSSec       = document.getElementById('latDMSSec');
-const lonDMSDeg       = document.getElementById('lonDMSDeg');
-const lonDMSMin       = document.getElementById('lonDMSMin');
-const lonDMSSec       = document.getElementById('lonDMSSec');
-const singleDmsInput  = document.getElementById('singleDmsInput');
+const singleDecInput = document.getElementById("singleDecInput");
+const latDecInput = document.getElementById("latDecInput");
+const lonDecInput = document.getElementById("lonDecInput");
+const flipDecBtn = document.getElementById("flipDecBtn");
+const latDMSDeg = document.getElementById("latDMSDeg");
+const latDMSMin = document.getElementById("latDMSMin");
+const latDMSSec = document.getElementById("latDMSSec");
+const lonDMSDeg = document.getElementById("lonDMSDeg");
+const lonDMSMin = document.getElementById("lonDMSMin");
+const lonDMSSec = document.getElementById("lonDMSSec");
+const singleDmsInput = document.getElementById("singleDmsInput");
 
-const locateBtn = document.getElementById('locateBtn');
-const clearBtn  = document.getElementById('clearBtn');
+const locateBtn = document.getElementById("locateBtn");
+const clearBtn = document.getElementById("clearBtn");
 
 // Layer panel elements
-const layerPanel = document.getElementById('layerPanel');
-const toggleLayerPanelBtn = document.getElementById('toggleLayerPanel');
-const toggleLabels = document.getElementById('toggleLabels');
-const togglePolygons = document.getElementById('togglePolygons');
-const borderColorInput = document.getElementById('borderColor');
-const borderOpacityInput = document.getElementById('borderOpacity');
-const fillColorInput = document.getElementById('fillColor');
-const fillOpacityInput = document.getElementById('fillOpacity');
-const baseMapSelect = document.getElementById('baseMapSelect');
-const addPointBtn = document.getElementById('addPointBtn');
-const exportPointsBtn = document.getElementById('exportPointsBtn');
+const layerPanel = document.getElementById("layerPanel");
+const toggleLayerPanelBtn = document.getElementById("toggleLayerPanel");
+const toggleLabels = document.getElementById("toggleLabels");
+const togglePolygons = document.getElementById("togglePolygons");
+const borderColorInput = document.getElementById("borderColor");
+const borderOpacityInput = document.getElementById("borderOpacity");
+const fillColorInput = document.getElementById("fillColor");
+const fillOpacityInput = document.getElementById("fillOpacity");
+const baseMapSelect = document.getElementById("baseMapSelect");
+const darkModeToggle = document.getElementById("darkModeToggle");
+const addPointBtn = document.getElementById("addPointBtn");
+const exportPointsBtn = document.getElementById("exportPointsBtn");
+const labelTextColor = document.getElementById("labelTextColor");
+const labelTextSize = document.getElementById("labelTextSize");
+const labelFont = document.getElementById("labelFont");
+const labelBg = document.getElementById("labelBg");
+const labelBgColor = document.getElementById("labelBgColor");
+const labelBgOpacity = document.getElementById("labelBgOpacity");
+const addPointCoordBtn = document.getElementById("addPointCoordBtn");
+const permalinkBtn = document.getElementById("permalinkBtn");
+const toggleInfo = document.getElementById("toggleInfo");
+const infoContent = document.getElementById("infoContent");
 
 // Mode identifiers
-const MODE_SINGLE_DEC  = 'singleDec';
-const MODE_DUAL_DEC    = 'dualDec';
-const MODE_DMS_BOXES   = 'dmsBoxes';
-const MODE_SINGLE_DMS  = 'singleDms';
+const MODE_SINGLE_DEC = "singleDec";
+const MODE_DUAL_DEC = "dualDec";
+const MODE_DMS_BOXES = "dmsBoxes";
+const MODE_SINGLE_DMS = "singleDms";
 
 let currentMode = MODE_SINGLE_DEC;
 
@@ -196,27 +249,37 @@ let currentMode = MODE_SINGLE_DEC;
 function setMode(mode) {
   currentMode = mode;
   // update aria-pressed and aria-checked on buttons for accessibility
-  const btns = [modeSingleDecBtn, modeDualDecBtn, modeDMSBoxesBtn, modeSingleDmsBtn];
+  const btns = [
+    modeSingleDecBtn,
+    modeDualDecBtn,
+    modeDMSBoxesBtn,
+    modeSingleDmsBtn,
+  ];
   const activeBtn = getButtonForMode(mode);
-  btns.forEach(btn => {
-    const active = (btn === activeBtn);
-    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  btns.forEach((btn) => {
+    const active = btn === activeBtn;
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
+    btn.setAttribute("aria-checked", active ? "true" : "false");
   });
   // show/hide input groups depending on the selected mode
-  singleDecInputs.hidden         = (mode !== MODE_SINGLE_DEC);
-  dualDecInputs.hidden           = (mode !== MODE_DUAL_DEC);
-  dmsBoxesInputs.hidden          = (mode !== MODE_DMS_BOXES);
-  singleDmsInputContainer.hidden = (mode !== MODE_SINGLE_DMS);
+  singleDecInputs.hidden = mode !== MODE_SINGLE_DEC;
+  dualDecInputs.hidden = mode !== MODE_DUAL_DEC;
+  dmsBoxesInputs.hidden = mode !== MODE_DMS_BOXES;
+  singleDmsInputContainer.hidden = mode !== MODE_SINGLE_DMS;
 }
 
 function getButtonForMode(mode) {
   switch (mode) {
-    case MODE_SINGLE_DEC: return modeSingleDecBtn;
-    case MODE_DUAL_DEC:   return modeDualDecBtn;
-    case MODE_DMS_BOXES:  return modeDMSBoxesBtn;
-    case MODE_SINGLE_DMS: return modeSingleDmsBtn;
-    default: return modeSingleDecBtn;
+    case MODE_SINGLE_DEC:
+      return modeSingleDecBtn;
+    case MODE_DUAL_DEC:
+      return modeDualDecBtn;
+    case MODE_DMS_BOXES:
+      return modeDMSBoxesBtn;
+    case MODE_SINGLE_DMS:
+      return modeSingleDmsBtn;
+    default:
+      return modeSingleDecBtn;
   }
 }
 
@@ -224,13 +287,54 @@ function getButtonForMode(mode) {
 setMode(currentMode);
 
 // Mode button event handlers
-modeSingleDecBtn.addEventListener('click', () => setMode(MODE_SINGLE_DEC));
-modeDualDecBtn.addEventListener('click',   () => setMode(MODE_DUAL_DEC));
-modeDMSBoxesBtn.addEventListener('click',  () => setMode(MODE_DMS_BOXES));
-modeSingleDmsBtn.addEventListener('click', () => setMode(MODE_SINGLE_DMS));
+modeSingleDecBtn.addEventListener("click", () => setMode(MODE_SINGLE_DEC));
+modeDualDecBtn.addEventListener("click", () => setMode(MODE_DUAL_DEC));
+modeDMSBoxesBtn.addEventListener("click", () => setMode(MODE_DMS_BOXES));
+modeSingleDmsBtn.addEventListener("click", () => setMode(MODE_SINGLE_DMS));
+
+function autoTab(curr, next, maxLen, prev = null) {
+  if (!curr) return;
+  // Forward tabbing
+  curr.addEventListener("input", (e) => {
+    // Only auto-advance if:
+    // - input is at maxLen
+    // - cursor is at the end
+    // - no text is selected
+    if (
+      curr.value &&
+      curr.value.length >= maxLen &&
+      curr.selectionStart === curr.value.length &&
+      curr.selectionEnd === curr.value.length
+    ) {
+      if (next) next.focus();
+    }
+  });
+
+  // Backward tabbing on backspace at start
+  curr.addEventListener("keydown", (e) => {
+    if (
+      e.key === "Backspace" &&
+      curr.selectionStart === 0 &&
+      curr.selectionEnd === 0 &&
+      prev
+    ) {
+      prev.focus();
+      // Optionally, move cursor to end of previous input
+      if (typeof prev.value === "string") {
+        prev.setSelectionRange(prev.value.length, prev.value.length);
+      }
+      e.preventDefault();
+    }
+  });
+}
+autoTab(latDMSDeg, latDMSMin, 2);
+autoTab(latDMSMin, latDMSSec, 2);
+autoTab(latDMSSec, lonDMSDeg, 2);
+autoTab(lonDMSDeg, lonDMSMin, 3);
+autoTab(lonDMSMin, lonDMSSec, 2);
 
 // Flip button handler: swap latitude and longitude values in dual decimal mode
-flipDecBtn.addEventListener('click', () => {
+flipDecBtn.addEventListener("click", () => {
   const latVal = latDecInput.value.trim();
   const lonVal = lonDecInput.value.trim();
   if (latVal && lonVal) {
@@ -238,20 +342,31 @@ flipDecBtn.addEventListener('click', () => {
     lonDecInput.value = latVal;
   } else if (latVal && !lonVal) {
     lonDecInput.value = latVal;
-    latDecInput.value = '';
+    latDecInput.value = "";
   } else if (!latVal && lonVal) {
     latDecInput.value = lonVal;
-    lonDecInput.value = '';
+    lonDecInput.value = "";
   }
   // Show visual feedback
-  showToast('Coordinates flipped');
+  showToast("Coordinates flipped");
 });
 
 // Locate on Enter key for any visible input
-[singleDecInput, latDecInput, lonDecInput, latDMSDeg, latDMSMin, latDMSSec, lonDMSDeg, lonDMSMin, lonDMSSec, singleDmsInput].forEach(input => {
+[
+  singleDecInput,
+  latDecInput,
+  lonDecInput,
+  latDMSDeg,
+  latDMSMin,
+  latDMSSec,
+  lonDMSDeg,
+  lonDMSMin,
+  lonDMSSec,
+  singleDmsInput,
+].forEach((input) => {
   if (input) {
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
         e.preventDefault();
         handleLocate();
       }
@@ -260,23 +375,24 @@ flipDecBtn.addEventListener('click', () => {
 });
 
 // Locate button handler
-locateBtn.addEventListener('click', handleLocate);
+locateBtn.addEventListener("click", handleLocate);
 
 // Clear button handler: clear marker and all inputs
-clearBtn.addEventListener('click', () => {
+clearBtn.addEventListener("click", () => {
   clearInputs();
   clearSelection();
 });
 
 // Layer panel interactions
-toggleLayerPanelBtn.addEventListener('click', () => {
-  layerPanel.classList.toggle('collapsed');
+toggleLayerPanelBtn.addEventListener("click", () => {
+  layerPanel.classList.toggle("collapsed");
 });
 
 if (togglePolygons) {
-  togglePolygons.addEventListener('change', () => {
+  togglePolygons.addEventListener("change", () => {
     if (!communeLayer) return;
-    if (togglePolygons.checked) communeLayer.addTo(map); else map.removeLayer(communeLayer);
+    if (togglePolygons.checked) communeLayer.addTo(map);
+    else map.removeLayer(communeLayer);
   });
 }
 
@@ -287,62 +403,144 @@ function updateCommuneStyle() {
     opacity: parseFloat(borderOpacityInput.value),
     weight: 1.6,
     fillColor: fillColorInput.value,
-    fillOpacity: parseFloat(fillOpacityInput.value)
+    fillOpacity: parseFloat(fillOpacityInput.value),
   });
 }
-[borderColorInput, borderOpacityInput, fillColorInput, fillOpacityInput].forEach(el => {
-  el && el.addEventListener('input', updateCommuneStyle);
+[
+  borderColorInput,
+  borderOpacityInput,
+  fillColorInput,
+  fillOpacityInput,
+].forEach((el) => {
+  el && el.addEventListener("input", updateCommuneStyle);
 });
 
-toggleLabels.addEventListener('change', () => {
+function hexToRgb(hex) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) return null;
+  return `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}`;
+}
+
+function updateLabelStyle() {
+  const root = document.documentElement;
+  root.style.setProperty("--label-text-color", labelTextColor.value);
+  root.style.setProperty("--label-font-size", `${labelTextSize.value}px`);
+  root.style.setProperty("--label-font-family", labelFont.value);
+  const rgb = hexToRgb(labelBgColor.value) || "255,255,255";
+  const opacity = labelBg.checked ? parseFloat(labelBgOpacity.value) : 0;
+  root.style.setProperty("--label-bg-color", `rgba(${rgb},${opacity})`);
+}
+
+[
+  labelTextColor,
+  labelTextSize,
+  labelFont,
+  labelBgColor,
+  labelBgOpacity,
+  labelBg,
+].forEach((el) => {
+  el && el.addEventListener("input", updateLabelStyle);
+  el && el.addEventListener("change", updateLabelStyle);
+});
+
+function updateLabelPersistence() {
   if (!communeLayer) return;
-  communeLayer.eachLayer(l => {
-    if (toggleLabels.checked) {
-      const name = l.feature?.properties?.name || '';
-      l.bindTooltip(name, {direction:'center', className:'custom-tooltip'});
-    } else {
-      l.unbindTooltip();
-    }
+  communeLayer.eachLayer((l) => {
+    const name = l.feature?.properties?.name || "";
+    l.unbindTooltip();
+    l.bindTooltip(name, {
+      direction: "center",
+      className: "custom-tooltip",
+      permanent: toggleLabels.checked,
+    });
   });
-});
+}
 
-baseMapSelect.addEventListener('change', async () => {
+toggleLabels.addEventListener("change", updateLabelPersistence);
+
+baseMapSelect.addEventListener("change", async () => {
   const val = baseMapSelect.value;
+  if (darkMode) return; // ignore while dark mode active
   if (currentBase) map.removeLayer(currentBase);
   const layer = await baseLayers[val];
   currentBase = layer;
   layer.addTo(map);
 });
 
-addPointBtn.addEventListener('click', () => {
-  addingPoint = !addingPoint;
-  addPointBtn.classList.toggle('active', addingPoint);
-  if (addingPoint) showToast('Click on the map to add a point');
+darkModeToggle?.addEventListener("change", async () => {
+  darkMode = darkModeToggle.checked;
+  document.body.classList.toggle("dark-mode", darkMode);
+  if (currentBase) map.removeLayer(currentBase);
+  if (darkMode) {
+    darkLayer = await baseLayers.dark;
+    currentBase = darkLayer;
+  } else {
+    const layer = await baseLayers[baseMapSelect.value];
+    currentBase = layer;
+  }
+  currentBase.addTo(map);
 });
 
-exportPointsBtn.addEventListener('click', () => {
-  const fc = { type: 'FeatureCollection', features: points };
-  const blob = new Blob([JSON.stringify(fc, null, 2)], {type:'application/json'});
+addPointBtn.addEventListener("click", () => {
+  addingPoint = !addingPoint;
+  addPointBtn.classList.toggle("active", addingPoint);
+  if (addingPoint) showToast("Click on the map to add a point");
+});
+
+exportPointsBtn.addEventListener("click", () => {
+  const fc = { type: "FeatureCollection", features: points };
+  const blob = new Blob([JSON.stringify(fc, null, 2)], {
+    type: "application/json",
+  });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
-  a.download = 'points.geojson';
+  a.download = "points.geojson";
   a.click();
   URL.revokeObjectURL(url);
 });
 
+addPointCoordBtn.addEventListener("click", () => {
+  handleLocate();
+  if (activeMarker) {
+    const ll = activeMarker.getLatLng();
+    createPointAt(ll.lat, ll.lng);
+  } else {
+    showToast("Enter coordinates first");
+  }
+});
+
+permalinkBtn.addEventListener("click", () => {
+  const c = map.getCenter();
+  const url = `${location.origin}${location.pathname}#lat=${c.lat.toFixed(5)}&lon=${c.lng.toFixed(5)}`;
+  navigator.clipboard.writeText(url).then(
+    () => {
+      showToast("Permalink copied");
+    },
+    () => {
+      showToast("Copy failed");
+    },
+  );
+});
+
+toggleInfo?.addEventListener("click", () => {
+  if (!infoContent) return;
+  if (infoContent.hasAttribute("hidden")) infoContent.removeAttribute("hidden");
+  else infoContent.setAttribute("hidden", "");
+});
+
 function clearInputs() {
   // Clear all known input fields
-  singleDecInput.value = '';
-  latDecInput.value    = '';
-  lonDecInput.value    = '';
-  latDMSDeg.value      = '';
-  latDMSMin.value      = '';
-  latDMSSec.value      = '';
-  lonDMSDeg.value      = '';
-  lonDMSMin.value      = '';
-  lonDMSSec.value      = '';
-  singleDmsInput.value = '';
+  singleDecInput.value = "";
+  latDecInput.value = "";
+  lonDecInput.value = "";
+  latDMSDeg.value = "";
+  latDMSMin.value = "";
+  latDMSSec.value = "";
+  lonDMSDeg.value = "";
+  lonDMSMin.value = "";
+  lonDMSSec.value = "";
+  singleDmsInput.value = "";
 }
 
 function clearSelection() {
@@ -350,7 +548,7 @@ function clearSelection() {
     map.removeLayer(activeMarker);
     activeMarker = null;
   }
-  announce('Selection cleared');
+  announce("Selection cleared");
 }
 
 // -----------------------------------------------------------------------------
@@ -368,9 +566,9 @@ function parseNumber(str) {
  * Validate latitude and longitude values. Returns error message or null.
  */
 function validateLatLon(lat, lon) {
-  if (lat === null || lon === null) return 'Could not parse coordinates.';
+  if (lat === null || lon === null) return "Could not parse coordinates.";
   if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-    return 'Latitude must be in [-90,90] and longitude in [-180,180].';
+    return "Latitude must be in [-90,90] and longitude in [-180,180].";
   }
   return null;
 }
@@ -409,7 +607,7 @@ function locateFromDualDec() {
   const latStr = latDecInput.value.trim();
   const lonStr = lonDecInput.value.trim();
   if (!latStr || !lonStr) {
-    showToast('Please enter both latitude and longitude.');
+    showToast("Please enter both latitude and longitude.");
     return;
   }
   const lat = parseNumber(latStr);
@@ -432,7 +630,7 @@ function locateFromDmsBoxes() {
   const lonSecStr = lonDMSSec.value.trim();
   // Require at least degrees for both lat and lon
   if (!latDegStr || !lonDegStr) {
-    showToast('Degrees are required for both latitude and longitude.');
+    showToast("Degrees are required for both latitude and longitude.");
     return;
   }
   const latDeg = parseFloat(latDegStr);
@@ -441,13 +639,26 @@ function locateFromDmsBoxes() {
   const lonDeg = parseFloat(lonDegStr);
   const lonMin = lonMinStr ? parseFloat(lonMinStr) : 0;
   const lonSec = lonSecStr ? parseFloat(lonSecStr) : 0;
-  if ([latDeg, latMin, latSec, lonDeg, lonMin, lonSec].some(n => !Number.isFinite(n))) {
-    showToast('Invalid DMS values.');
+  if (
+    [latDeg, latMin, latSec, lonDeg, lonMin, lonSec].some(
+      (n) => !Number.isFinite(n),
+    )
+  ) {
+    showToast("Invalid DMS values.");
     return;
   }
   // Validate minutes/seconds ranges
-  if (latMin < 0 || latMin >= 60 || latSec < 0 || latSec >= 60 || lonMin < 0 || lonMin >= 60 || lonSec < 0 || lonSec >= 60) {
-    showToast('Minutes and seconds must be in [0,60).');
+  if (
+    latMin < 0 ||
+    latMin >= 60 ||
+    latSec < 0 ||
+    latSec >= 60 ||
+    lonMin < 0 ||
+    lonMin >= 60 ||
+    lonSec < 0 ||
+    lonSec >= 60
+  ) {
+    showToast("Minutes and seconds must be in [0,60).");
     return;
   }
   // Convert to absolute degrees and sign
@@ -468,14 +679,17 @@ function locateFromSingleDms() {
   const raw = singleDmsInput.value.trim();
   if (!raw) return;
   // Regex to capture two DMS coordinate groups
-  const pattern = /([\-]?\d+(?:\.\d+)?)\s*°\s*([\d\.]+)?\s*(?:'|′)?\s*([\d\.]+)?\s*(?:"|″)?\s*([NSEW])/ig;
+  const pattern =
+    /([\-]?\d+(?:\.\d+)?)\s*°\s*([\d\.]+)?\s*(?:'|′)?\s*([\d\.]+)?\s*(?:"|″)?\s*([NSEW])/gi;
   const matches = [];
   let m;
   while ((m = pattern.exec(raw)) !== null) {
     matches.push(m);
   }
   if (matches.length < 2) {
-    showToast('Could not parse DMS string. Expect format like 20°44\'19.7"S 164°47\'41.6"E');
+    showToast(
+      "Could not parse DMS string. Expect format like 20°44'19.7\"S 164°47'41.6\"E",
+    );
     return;
   }
   // Extract lat and lon from first two matches
@@ -484,7 +698,7 @@ function locateFromSingleDms() {
   const latDecVal = dmsMatchToDecimal(latMatch);
   const lonDecVal = dmsMatchToDecimal(lonMatch);
   if (latDecVal == null || lonDecVal == null) {
-    showToast('Invalid DMS values in input.');
+    showToast("Invalid DMS values in input.");
     return;
   }
   const err = validateLatLon(latDecVal, lonDecVal);
@@ -502,52 +716,58 @@ function dmsMatchToDecimal(match) {
   const min = match[2] ? parseFloat(match[2]) : 0;
   const sec = match[3] ? parseFloat(match[3]) : 0;
   const dir = match[4].toUpperCase();
-  if (![deg, min, sec].every(n => Number.isFinite(n))) return null;
+  if (![deg, min, sec].every((n) => Number.isFinite(n))) return null;
   if (min < 0 || min >= 60 || sec < 0 || sec >= 60) return null;
   let dec = Math.abs(deg) + min / 60 + sec / 3600;
   // Determine sign: use sign of degrees if negative, otherwise direction
   if (deg < 0) {
     dec = -dec;
   } else {
-    if (dir === 'S' || dir === 'W') dec = -dec;
+    if (dir === "S" || dir === "W") dec = -dec;
   }
   return dec;
+}
+
+function createPointAt(lat, lng) {
+  const label = prompt("Point label (optional)", "") || "";
+  const color = prompt("Marker color", "#ff0000") || "#ff0000";
+  let opacity = parseFloat(prompt("Opacity 0-1", "0.8"));
+  if (isNaN(opacity) || opacity < 0 || opacity > 1) {
+    alert("Invalid opacity value. Using default 0.8.");
+    opacity = 0.8;
+  }
+  const marker = L.circleMarker([lat, lng], {
+    color,
+    fillColor: color,
+    fillOpacity: opacity,
+    radius: 6,
+  }).addTo(pointsLayer);
+  marker.bindPopup(label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+  let communeName = null;
+  if (communeLayer) {
+    try {
+      const hits = leafletPip.pointInLayer([lng, lat], communeLayer, true);
+      if (hits.length) communeName = hits[0].feature?.properties?.name || null;
+    } catch (err) {
+      console.error("Point-in-polygon check failed:", err);
+    }
+  }
+  points.push({
+    type: "Feature",
+    geometry: { type: "Point", coordinates: [lng, lat] },
+    properties: { label, color, opacity, commune: communeName },
+  });
 }
 
 // Click handler: either add point or identify commune
 let addingPoint = false;
 const pointsLayer = L.layerGroup().addTo(map);
 const points = [];
-map.on('click', (e) => {
+map.on("click", (e) => {
   if (addingPoint) {
     addingPoint = false;
-    addPointBtn.classList.remove('active');
-    const label = prompt('Point label (optional)', '') || '';
-    const color = prompt('Marker color', '#ff0000') || '#ff0000';
-    let opacity = parseFloat(prompt('Opacity 0-1', '0.8'));
-    if (isNaN(opacity) || opacity < 0 || opacity > 1) {
-      alert('Invalid opacity value. Using default 0.8.');
-      opacity = 0.8;
-    }
-    const marker = L.circleMarker(e.latlng, {
-      color,
-      fillColor: color,
-      fillOpacity: opacity,
-      radius: 6
-    }).addTo(pointsLayer);
-    marker.bindPopup(label || `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}`);
-    let communeName = null;
-    if (communeLayer) {
-      try {
-        const hits = leafletPip.pointInLayer([e.latlng.lng, e.latlng.lat], communeLayer, true);
-        if (hits.length) communeName = hits[0].feature?.properties?.name || null;
-      } catch (err) { console.error('Point-in-polygon check failed:', err); }
-    }
-    points.push({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [e.latlng.lng, e.latlng.lat] },
-      properties: { label, color, opacity: isNaN(opacity) ? 0.8 : opacity, commune: communeName }
-    });
+    addPointBtn.classList.remove("active");
+    createPointAt(e.latlng.lat, e.latlng.lng);
   } else {
     identifyAt(e.latlng.lat, e.latlng.lng, true);
   }
@@ -557,35 +777,37 @@ map.on('click', (e) => {
 function identifyAt(lat, lng, dropMarker = false) {
   map.setView([lat, lng], Math.max(map.getZoom(), 11));
 
-  let popupText = 'No commune found at this location.';
+  let popupText = "No commune found at this location.";
   if (communeLayer) {
     // leaflet-pip expects [lng, lat]
     try {
       const hits = leafletPip.pointInLayer([lng, lat], communeLayer, true);
       if (hits.length) {
         const feature = hits[0].feature || {};
-        const name = feature?.properties?.name || 'Unknown commune';
+        const name = feature?.properties?.name || "Unknown commune";
         popupText = `Commune: ${name}`;
       }
     } catch (err) {
-      console.error('leaflet-pip error:', err);
+      console.error("leaflet-pip error:", err);
     }
   }
-  
+
   if (dropMarker) {
     // Remove existing marker
     if (activeMarker) map.removeLayer(activeMarker);
-    
+
     // Create distinctive red marker for entered coordinates
     activeMarker = L.marker([lat, lng], {
-      icon: coordinateMarkerIcon
+      icon: coordinateMarkerIcon,
     }).addTo(map);
-    
+
     // Enhanced popup with coordinates and commune info
     const coordText = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     const fullPopupText = `${coordText}<br>${popupText}`;
-    activeMarker.bindPopup(fullPopupText, { className: 'coordinate-popup' }).openPopup();
-    
+    activeMarker
+      .bindPopup(fullPopupText, { className: "coordinate-popup" })
+      .openPopup();
+
     // Ensure marker is visible by bringing it to front
     activeMarker.setZIndexOffset(1000);
   } else {
@@ -597,19 +819,19 @@ function identifyAt(lat, lng, dropMarker = false) {
 // Name search: accent/case-insensitive substring search over communeLayer
 function searchByName(raw) {
   if (!communeLayer) {
-    showToast('Data not loaded yet.');
+    showToast("Data not loaded yet.");
     return;
   }
   const q = normalize(raw);
   let matchLayer = null;
-  communeLayer.eachLayer(layer => {
+  communeLayer.eachLayer((layer) => {
     if (matchLayer) return; // early exit after first match
-    const name = layer.feature?.properties?.name || '';
+    const name = layer.feature?.properties?.name || "";
     if (normalize(name).includes(q)) matchLayer = layer;
   });
   if (!matchLayer) {
-    showToast('No match found.');
-    announce('No match found');
+    showToast("No match found.");
+    announce("No match found");
     return;
   }
   const { name } = matchLayer.feature.properties;
@@ -620,6 +842,6 @@ function searchByName(raw) {
 
 // Register locate handlers
 locateHandlers[MODE_SINGLE_DEC] = locateFromSingleDec;
-locateHandlers[MODE_DUAL_DEC]   = locateFromDualDec;
-locateHandlers[MODE_DMS_BOXES]  = locateFromDmsBoxes;
+locateHandlers[MODE_DUAL_DEC] = locateFromDualDec;
+locateHandlers[MODE_DMS_BOXES] = locateFromDmsBoxes;
 locateHandlers[MODE_SINGLE_DMS] = locateFromSingleDms;
