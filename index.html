@@ -4,13 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>New Caledonia Commune Locator</title>
-
-    <!-- External stylesheets -->
-    <!-- Leaflet core styles are pulled from a CDN.  Keeping the map styles
-         external makes it easy to update Leaflet without touching our own
-         assets. The original project embedded these styles directly in the
-         HTML【894404182387996†L40-L52】; extracting them into files cleans up
-         the markup and improves maintainability. -->
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -21,29 +14,38 @@
     <header>
       <h1>New Caledonia Commune Locator</h1>
       <p>
-        Enter latitude and longitude (for example <code>-22.2758, 166.4580</code>)
-        or a commune name to locate it on the map.
+        Enter longitude and latitude below (decimal or degrees/minutes/seconds) or click a commune on the map to learn more.
       </p>
-      <div class="search-container">
+      <div class="search-container coord-container">
+        <!-- Longitude (X) input -->
         <input
-          type="text"
-          id="searchBox"
-          placeholder="Latitude, Longitude or Commune Name"
-          aria-label="Search by coordinates or commune name"
+          type="number"
+          id="lonBox"
+          placeholder="Longitude (X)"
+          aria-label="Longitude (X)"
+          step="any"
         />
-        <button id="searchButton" aria-label="Search">Search</button>
+        <!-- Latitude (Y) input -->
+        <input
+          type="number"
+          id="latBox"
+          placeholder="Latitude (Y)"
+          aria-label="Latitude (Y)"
+          step="any"
+        />
+        <!-- Toggle between decimal and DMS -->
+        <button id="toggleFormat" aria-label="Switch coordinate format">°′″</button>
+        <!-- Perform search -->
+        <button id="searchButton" aria-label="Locate coordinates">Search</button>
+        <!-- Copy permalink -->
+        <button id="copyLink" aria-label="Copy shareable link">🔗 Copy Link</button>
+        <!-- Theme toggle -->
+        <button id="themeToggle" aria-label="Switch map theme">🌙</button>
       </div>
+      <div id="a11yMsg" role="status" aria-live="polite"></div>
     </header>
-
-    <!-- The map container grows to fill the remaining height of the page -->
     <div id="map"></div>
-
-    <!-- External scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- leaflet‑pip is used to test whether a point lies within a given
-         polygon.  The original project relied on this library【894404182387996†L43-L52】.
-         Including it here allows us to perform reverse geocoding on the
-         client side. -->
     <script src="https://unpkg.com/leaflet-pip@1.1.0/leaflet-pip.min.js"></script>
     <script src="assets/js/app.js"></script>
   </body>
