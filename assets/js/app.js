@@ -156,6 +156,17 @@ function defaultStyle() {
 }
 
 /**
+ * Report a commune boundary loading error in the accessibility region
+ * while logging the original error to the console.
+ *
+ * @param {Error} err The encountered error.
+ */
+function handleLoadError(err) {
+  console.error(err);
+  document.getElementById('a11yMsg').textContent = 'Unable to load commune boundaries';
+}
+
+/**
  * Handler attached to each GeoJSON feature.  Assigns a click handler
  * that opens a popup displaying the commune name and a link to its
  * Wikipedia page.  Keys are normalised as described above.
@@ -292,17 +303,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (lazyBtn) {
     lazyBtn.addEventListener('click', () => {
       lazyLoading = !lazyLoading;
+      const a11y = document.getElementById('a11yMsg');
       if (lazyLoading) {
         if (communeLayer) map.removeLayer(communeLayer);
+        a11y.textContent = 'Lazy loading enabled.';
+      } else if (communeLayer) {
+        a11y.textContent = 'Lazy loading disabled.';
+        map.addLayer(communeLayer);
       } else {
-        if (communeLayer) {
-          map.addLayer(communeLayer);
-        } else {
-          loadCommuneLayer().catch((err) => {
-            console.error(err);
-            document.getElementById('a11yMsg').textContent = 'Unable to load commune boundaries';
-          });
-        }
+        a11y.textContent = 'Lazy loading disabled.';
+        loadCommuneLayer().catch((err) => {
+          handleLoadError(err);
+        });
       }
     });
   }
@@ -413,8 +425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load commune boundaries on startup unless lazy loading is enabled.
   if (!lazyLoading) {
     loadCommuneLayer().catch((err) => {
-      console.error(err);
-      document.getElementById('a11yMsg').textContent = 'Unable to load commune boundaries';
+      handleLoadError(err);
     });
   }
 });
