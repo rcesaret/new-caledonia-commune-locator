@@ -54,7 +54,7 @@ function announce(msg) {
 }
 
 // ---- Load GeoJSON ----
-fetch(GEOJSON_URL, { cache: 'no-store' })
+fetch(GEOJSON_URL)
   .then(r => r.json())
   .then(fc => {
     if (!fc || !Array.isArray(fc.features)) {
