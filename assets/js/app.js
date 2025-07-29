@@ -420,7 +420,8 @@ function searchByName(raw) {
     announce('No match found');
     return;
   }
-  const { name } = matchLayer.feature.properties;
+
+  const {name} = matchLayer.feature.properties;
   map.fitBounds(matchLayer.getBounds());
   matchLayer.bindPopup(`Commune: ${name}`).openPopup();
   announce(`Found commune: ${name}`);
