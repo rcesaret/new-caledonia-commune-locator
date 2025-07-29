@@ -27,9 +27,11 @@ if (a11y && !a11y.hasAttribute('aria-live')) {
 if (!window._a11yMsgTimeout) window._a11yMsgTimeout = null;
 function setA11yMsg(msg) {
   if (window._a11yMsgTimeout) clearTimeout(window._a11yMsgTimeout);
+  // Clear the message first to ensure screen readers re-announce repeated messages
+  if (a11y) a11y.textContent = '';
   window._a11yMsgTimeout = setTimeout(() => {
     if (a11y) a11y.textContent = msg;
-  }, 200);
+  }, 100); // Shorter delay to minimize perceived lag
 }
 
 // A lookup table mapping normalised commune names (lowercase with
