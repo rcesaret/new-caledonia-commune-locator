@@ -15,13 +15,34 @@
 const MAP_CENTER = [-21.5, 165.5];
 const MAP_ZOOM   = 8;
 const GEOJSON_URL = 'data/nc-communes.geojson';
+const OFFLINE_TILE =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/wIAAgUBBu/q6QAAAABJRU5ErkJggg==';
+
+// Attempt to create a tile layer from OpenStreetMap. Fallback to a blank tile
+// if network access is blocked.
+async function createTileLayer() {
+  try {
+    const resp = await fetch('https://tile.openstreetmap.org/0/0/0.png', {
+      mode: 'no-cors',
+      signal: AbortSignal.timeout(5000) // 5-second timeout
+    });
+    // For 'no-cors', a successful network request results in an 'opaque' response.
+    if (resp.type === 'opaque') {
+      return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '\u00A9 OpenStreetMap contributors'
+      });
+    }
+    console.warn(`Unexpected response from tile server: type ${resp.type}`);
+  } catch (err) {
+    console.warn('Tile server unreachable, using offline tile:', err.message);
+  }
+  return L.tileLayer(OFFLINE_TILE, { maxZoom: 19, attribution: '' });
+}
 
 // ---- Map ----
 const map = L.map('map', { zoomControl: true }).setView(MAP_CENTER, MAP_ZOOM);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '\u00A9 OpenStreetMap contributors'
-}).addTo(map);
+createTileLayer().then(layer => layer.addTo(map));
 
 let communeLayer = null;
 let activeMarker = null;
@@ -57,9 +78,16 @@ function announce(msg) {
   if (status) status.textContent = msg;
 }
 // ---- Load GeoJSON ----
-fetch(GEOJSON_URL)
-  .then(r => r.json())
-  .then(fc => {
+function loadCommuneData() {
+  return fetch(GEOJSON_URL)
+    .then(r => r.json())
+    .catch(err => {
+      console.error('GeoJSON fetch failed:', err);
+      return (typeof COMMUNES_DATA !== 'undefined') ? COMMUNES_DATA : null;
+    });
+}
+
+loadCommuneData().then(fc => {
     if (!fc || !Array.isArray(fc.features)) {
       showToast('Failed to parse communes data.');
       return;
