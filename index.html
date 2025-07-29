@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>New Caledonia Commune Locator</title>
-  <meta name="description" content="Enter coordinates or commune name to identify the municipality in New Caledonia. Leaflet + point-in-polygon (leaflet-pip)." />
+  <meta name="description" content="Enter coordinates or commune name to identify the municipality in New Caledonia. Leaflet + point‑in‑polygon (leaflet‑pip)." />
   <meta name="robots" content="index,follow" />
   <meta property="og:title" content="New Caledonia Commune Locator" />
   <meta property="og:description" content="Enter coordinates to find the New Caledonia commune (municipality) and visualize its boundary." />
@@ -26,10 +26,55 @@
   </div>
 
   <!-- Controls overlay -->
+  <!--
+    The controls panel hosts four coordinate input modes as well as locate/clear actions.
+    Modes:
+      - Single decimal (lat,lng comma separated + commune name search fallback)
+      - Dual decimal (latitude and longitude in separate fields)
+      - DMS boxes (lat and lon broken into degrees/minutes/seconds)
+      - Single DMS (copy‑paste from Google Maps like "20°44'19.7"S 164°47'41.6"E")
+  -->
   <div id="controls" role="region" aria-label="Search controls">
-    <input id="searchInput" type="text" inputmode="text" placeholder="lat,lng or commune name" aria-label="Enter coordinates as lat,lng or a commune name" />
-    <button id="searchBtn" type="button" title="Search">Search</button>
-    <button id="clearBtn" type="button" title="Clear selections">Clear</button>
+    <div id="modeButtons" class="mode-buttons" role="radiogroup" aria-label="Coordinate input modes">
+      <button id="modeSingleDecBtn" type="button" class="mode-btn" aria-pressed="true" title="Single decimal input mode">Dec (1)</button>
+      <button id="modeDualDecBtn" type="button" class="mode-btn" aria-pressed="false" title="Dual decimal input mode">Dec (2)</button>
+      <button id="modeDMSBoxesBtn" type="button" class="mode-btn" aria-pressed="false" title="DMS boxes input mode">DMS Boxes</button>
+      <button id="modeSingleDmsBtn" type="button" class="mode-btn" aria-pressed="false" title="Single DMS string input mode">DMS (1)</button>
+    </div>
+
+    <!-- Single decimal input (lat,lng or commune name) -->
+    <div id="singleDecInputs" class="mode-inputs">
+      <input id="singleDecInput" type="text" inputmode="text" placeholder="lat,lng or commune name" aria-label="Enter lat,lng or commune name" />
+    </div>
+
+    <!-- Dual decimal input (two numeric fields + flip) -->
+    <div id="dualDecInputs" class="mode-inputs" hidden>
+      <input id="latDecInput" type="number" inputmode="decimal" placeholder="Latitude" aria-label="Latitude (decimal degrees)" />
+      <input id="lonDecInput" type="number" inputmode="decimal" placeholder="Longitude" aria-label="Longitude (decimal degrees)" />
+      <button id="flipDecBtn" type="button" title="Flip latitude and longitude values">Flip</button>
+    </div>
+
+    <!-- DMS boxes input (lat deg/min/sec, lon deg/min/sec) -->
+    <div id="dmsBoxesInputs" class="mode-inputs" hidden>
+      <div class="dms-group" aria-label="Latitude DMS inputs">
+        <input id="latDMSDeg" type="number" step="any" placeholder="Lat°" aria-label="Latitude degrees" />
+        <input id="latDMSMin" type="number" step="any" placeholder="Lat′" aria-label="Latitude minutes" />
+        <input id="latDMSSec" type="number" step="any" placeholder="Lat″" aria-label="Latitude seconds" />
+      </div>
+      <div class="dms-group" aria-label="Longitude DMS inputs">
+        <input id="lonDMSDeg" type="number" step="any" placeholder="Lon°" aria-label="Longitude degrees" />
+        <input id="lonDMSMin" type="number" step="any" placeholder="Lon′" aria-label="Longitude minutes" />
+        <input id="lonDMSSec" type="number" step="any" placeholder="Lon″" aria-label="Longitude seconds" />
+      </div>
+    </div>
+
+    <!-- Single DMS string input (e.g. 20°44'19.7"S 164°47'41.6"E) -->
+    <div id="singleDmsInputContainer" class="mode-inputs" hidden>
+      <input id="singleDmsInput" type="text" inputmode="text" placeholder="20°44'19.7&quot;S 164°47'41.6&quot;E" aria-label="Enter DMS coordinates string" />
+    </div>
+
+    <button id="locateBtn" type="button" title="Locate coordinates or search by name">Locate</button>
+    <button id="clearBtn" type="button" title="Clear selections and inputs">Clear</button>
     <span id="status" class="sr-only" aria-live="polite"></span>
   </div>
 
@@ -40,7 +85,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-2mF1g2aQ7s5l6n1GkXQ3FQJwQdK6QxPjQ+9dP6vQn2vQZl8g9r7l2zQp5tQw1n8W" crossorigin="anonymous"></script>
   <!-- leaflet-pip for point-in-polygon -->
   <script src="https://unpkg.com/leaflet-pip@1.1.0/leaflet-pip.min.js"></script>
-  
+
   <!-- App JS -->
   <script defer src="assets/js/app.js"></script>
 

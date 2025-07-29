@@ -1,8 +1,14 @@
 /* ===== Layout ===== */
-html, body, #map { height: 100%; margin: 0; }
+html, body, #map {
+  height: 100%;
+  margin: 0;
+}
 
-/* High-contrast focus for accessibility */
-:focus { outline: 2px dashed #333; outline-offset: 2px; }
+/* High‑contrast focus for accessibility */
+:focus {
+  outline: 2px dashed #333;
+  outline-offset: 2px;
+}
 
 /* Controls panel */
 #controls {
@@ -11,56 +17,124 @@ html, body, #map { height: 100%; margin: 0; }
   right: 12px;
   z-index: 1000;
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  align-items: center;
+  align-items: flex-start;
   background: #ffffff;
   padding: 10px 12px;
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  flex-wrap: wrap;
 }
 
-#controls input {
-  width: 280px;
-  max-width: 60vw;
-  height: 36px;
+/* Mode buttons container */
+.mode-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+/* Individual mode button */
+.mode-btn {
+  height: 32px;
   padding: 0 10px;
-  border: 1px solid #cbd5e1; /* slate-300 */
-  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f1f5f9; /* slate‑100 */
+  cursor: pointer;
+  font-size: 14px;
+}
+.mode-btn:hover {
+  background: #e2e8f0; /* slate‑200 */
+}
+.mode-btn[aria-pressed="true"] {
+  background: #3b82f6; /* blue‑500 */
+  color: #ffffff;
+  border-color: #3b82f6;
 }
 
-#controls button {
+/* Input groups for each mode */
+.mode-inputs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.mode-inputs[hidden] {
+  display: none !important;
+}
+
+/* DMS group styling */
+.dms-group {
+  display: flex;
+  gap: 4px;
+}
+
+/* Ensure numeric inputs align nicely */
+#dualDecInputs input,
+#dmsBoxesInputs input {
+  width: 80px;
+  max-width: 20vw;
+}
+
+/* Flip button styling */
+#flipDecBtn {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  cursor: pointer;
+}
+#flipDecBtn:hover {
+  background: #eef2f7;
+}
+
+/* Locate/Clear buttons */
+#locateBtn,
+#clearBtn {
   height: 36px;
   padding: 0 12px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  background: #f8fafc; /* slate-50 */
+  background: #f8fafc;
   cursor: pointer;
 }
-#controls button:hover { background: #eef2f7; }
+#locateBtn:hover,
+#clearBtn:hover {
+  background: #eef2f7;
+}
 
-/* Screen-reader only text */
+/* Screen‑reader only text */
 .sr-only {
   position: absolute !important;
-  height: 1px; width: 1px;
+  height: 1px;
+  width: 1px;
   overflow: hidden;
   clip: rect(1px, 1px, 1px, 1px);
-  white-space: nowrap; /* added line */
+  white-space: nowrap;
 }
 
 /* Map container */
-#map { position: absolute; inset: 0; }
+#map {
+  position: absolute;
+  inset: 0;
+}
 
 /* Tooltip style override */
 .leaflet-tooltip.custom-tooltip {
   background: #ffffff;
   border: 1px solid #a3a3a3;
-  color: #111827; /* gray-900 */
+  color: #111827; /* gray‑900 */
   padding: 2px 6px;
   font-size: 14px;
 }
 
-/* Hover highlight is handled via setStyle in JS; this class is here if you need a CSS-only fallback */
-.feature-hover { outline: 2px solid rgba(251, 146, 60, 0.95); }
+/* Hover highlight is handled via setStyle in JS; this class is here if you need a CSS‑only fallback */
+.feature-hover {
+  outline: 2px solid rgba(251, 146, 60, 0.95);
+}
 
 /* Toast (lightweight) */
 .toast {
