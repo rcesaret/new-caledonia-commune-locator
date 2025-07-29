@@ -26,6 +26,16 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 let communeLayer = null;
 let activeMarker = null;
 
+// Custom red marker icon for coordinate entries
+const coordinateMarkerIcon = L.icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 // Normalization helper (remove diacritics, lowercase)
 const normalize = (s) => (s || '')
   .normalize('NFD')
@@ -46,7 +56,6 @@ function announce(msg) {
   const status = document.getElementById('status');
   if (status) status.textContent = msg;
 }
-
 // ---- Load GeoJSON ----
 fetch(GEOJSON_URL)
   .then(r => r.json())
@@ -127,14 +136,19 @@ let currentMode = MODE_SINGLE_DEC;
 // Set the active mode visually and logically
 function setMode(mode) {
   currentMode = mode;
-  // update aria-pressed on buttons
+  // update aria-pressed and aria-checked on buttons for accessibility
   const btns = [modeSingleDecBtn, modeDualDecBtn, modeDMSBoxesBtn, modeSingleDmsBtn];
-  btns.forEach(btn => btn.setAttribute('aria-pressed', btn === getButtonForMode(mode) ? 'true' : 'false'));
-  // show/hide input groups
-  singleDecInputs.hidden           = (mode !== MODE_SINGLE_DEC);
-  dualDecInputs.hidden             = (mode !== MODE_DUAL_DEC);
-  dmsBoxesInputs.hidden            = (mode !== MODE_DMS_BOXES);
-  singleDmsInputContainer.hidden   = (mode !== MODE_SINGLE_DMS);
+  const activeBtn = getButtonForMode(mode);
+  btns.forEach(btn => {
+    const active = (btn === activeBtn);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+  // show/hide input groups depending on the selected mode
+  singleDecInputs.hidden         = (mode !== MODE_SINGLE_DEC);
+  dualDecInputs.hidden           = (mode !== MODE_DUAL_DEC);
+  dmsBoxesInputs.hidden          = (mode !== MODE_DMS_BOXES);
+  singleDmsInputContainer.hidden = (mode !== MODE_SINGLE_DMS);
 }
 
 function getButtonForMode(mode) {
@@ -170,6 +184,8 @@ flipDecBtn.addEventListener('click', () => {
     latDecInput.value = lonVal;
     lonDecInput.value = '';
   }
+  // Show visual feedback
+  showToast('Coordinates flipped');
 });
 
 // Locate on Enter key for any visible input
@@ -215,24 +231,34 @@ function clearSelection() {
   announce('Selection cleared');
 }
 
-// Primary locate handler: parse input according to current mode
-function handleLocate() {
-  switch (currentMode) {
-    case MODE_SINGLE_DEC:
-      locateFromSingleDec();
-      break;
-    case MODE_DUAL_DEC:
-      locateFromDualDec();
-      break;
-    case MODE_DMS_BOXES:
-      locateFromDmsBoxes();
-      break;
-    case MODE_SINGLE_DMS:
-      locateFromSingleDms();
-      break;
-    default:
-      locateFromSingleDec();
+// -----------------------------------------------------------------------------
+// Input validation helpers
+
+/**
+ * Parse a string into a floating‑point number. Returns null if parsing fails.
+ */
+function parseNumber(str) {
+  const n = parseFloat(str);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Validate latitude and longitude values. Returns error message or null.
+ */
+function validateLatLon(lat, lon) {
+  if (lat === null || lon === null) return 'Could not parse coordinates.';
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    return 'Latitude must be in [-90,90] and longitude in [-180,180].';
   }
+  return null;
+}
+
+// Primary locate handler: dispatch based on current mode
+const locateHandlers = {};
+
+function handleLocate() {
+  const handler = locateHandlers[currentMode] || locateFromSingleDec;
+  handler();
 }
 
 // Single decimal input: lat,lng comma separated OR name search
@@ -242,14 +268,11 @@ function locateFromSingleDec() {
   // Try coord first: "lat,lng" with optional whitespace
   const m = raw.match(/^(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)$/);
   if (m) {
-    const lat = parseFloat(m[1]);
-    const lng = parseFloat(m[2]);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      showToast('Could not parse coordinates.');
-      return;
-    }
-    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-      showToast('Latitude must be in [-90,90] and longitude in [-180,180].');
+    const lat = parseNumber(m[1]);
+    const lng = parseNumber(m[2]);
+    const err = validateLatLon(lat, lng);
+    if (err) {
+      showToast(err);
       return;
     }
     identifyAt(lat, lng, true);
@@ -267,14 +290,11 @@ function locateFromDualDec() {
     showToast('Please enter both latitude and longitude.');
     return;
   }
-  const lat = parseFloat(latStr);
-  const lon = parseFloat(lonStr);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-    showToast('Could not parse decimal coordinates.');
-    return;
-  }
-  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-    showToast('Latitude must be in [-90,90] and longitude in [-180,180].');
+  const lat = parseNumber(latStr);
+  const lon = parseNumber(lonStr);
+  const err = validateLatLon(lat, lon);
+  if (err) {
+    showToast(err);
     return;
   }
   identifyAt(lat, lon, true);
@@ -313,8 +333,9 @@ function locateFromDmsBoxes() {
   const lonSign = lonDeg < 0 ? -1 : 1;
   const latDec = latSign * (Math.abs(latDeg) + latMin / 60 + latSec / 3600);
   const lonDec = lonSign * (Math.abs(lonDeg) + lonMin / 60 + lonSec / 3600);
-  if (latDec < -90 || latDec > 90 || lonDec < -180 || lonDec > 180) {
-    showToast('Latitude must be in [-90,90] and longitude in [-180,180].');
+  const err = validateLatLon(latDec, lonDec);
+  if (err) {
+    showToast(err);
     return;
   }
   identifyAt(latDec, lonDec, true);
@@ -324,8 +345,7 @@ function locateFromDmsBoxes() {
 function locateFromSingleDms() {
   const raw = singleDmsInput.value.trim();
   if (!raw) return;
-  // Regex to capture two DMS coordinate groups: degrees° minutes' seconds"Direction
-  // Accept unicode prime characters (′ ″) and ASCII ' " as separators. Spaces between components are optional.
+  // Regex to capture two DMS coordinate groups
   const pattern = /([\-]?\d+(?:\.\d+)?)\s*°\s*([\d\.]+)?\s*(?:'|′)?\s*([\d\.]+)?\s*(?:"|″)?\s*([NSEW])/ig;
   const matches = [];
   let m;
@@ -345,8 +365,9 @@ function locateFromSingleDms() {
     showToast('Invalid DMS values in input.');
     return;
   }
-  if (latDecVal < -90 || latDecVal > 90 || lonDecVal < -180 || lonDecVal > 180) {
-    showToast('Latitude must be in [-90,90] and longitude in [-180,180].');
+  const err = validateLatLon(latDecVal, lonDecVal);
+  if (err) {
+    showToast(err);
     return;
   }
   identifyAt(latDecVal, lonDecVal, true);
@@ -364,18 +385,17 @@ function dmsMatchToDecimal(match) {
   let dec = Math.abs(deg) + min / 60 + sec / 3600;
   // Determine sign: use sign of degrees if negative, otherwise direction
   if (deg < 0) {
-      dec = -dec;
-    }
-  else if (dir === 'S' || dir === 'W') dec = -dec;
-
-  // For E/W adjust longitude sign; this will be done by calling context; nothing further
+    dec = -dec;
+  } else {
+    if (dir === 'S' || dir === 'W') dec = -dec;
+  }
   return dec;
 }
 
 // Click-to-identify on map: drop marker
 map.on('click', (e) => identifyAt(e.latlng.lat, e.latlng.lng, true));
 
-// Identify commune at given lat/lng. Optionally drop a marker.
+// ENHANCED: Identify commune at given lat/lng with improved marker visibility
 function identifyAt(lat, lng, dropMarker = false) {
   map.setView([lat, lng], Math.max(map.getZoom(), 11));
 
@@ -393,9 +413,23 @@ function identifyAt(lat, lng, dropMarker = false) {
       console.error('leaflet-pip error:', err);
     }
   }
+  
   if (dropMarker) {
+    // Remove existing marker
     if (activeMarker) map.removeLayer(activeMarker);
-    activeMarker = L.marker([lat, lng]).addTo(map).bindPopup(popupText).openPopup();
+    
+    // Create distinctive red marker for entered coordinates
+    activeMarker = L.marker([lat, lng], {
+      icon: coordinateMarkerIcon
+    }).addTo(map);
+    
+    // Enhanced popup with coordinates and commune info
+    const coordText = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    const fullPopupText = `${coordText}<br>${popupText}`;
+    activeMarker.bindPopup(fullPopupText, { className: 'coordinate-popup' }).openPopup();
+    
+    // Ensure marker is visible by bringing it to front
+    activeMarker.setZIndexOffset(1000);
   } else {
     showToast(popupText);
   }
@@ -420,9 +454,14 @@ function searchByName(raw) {
     announce('No match found');
     return;
   }
-
-  const {name} = matchLayer.feature.properties;
+  const { name } = matchLayer.feature.properties;
   map.fitBounds(matchLayer.getBounds());
   matchLayer.bindPopup(`Commune: ${name}`).openPopup();
   announce(`Found commune: ${name}`);
 }
+
+// Register locate handlers
+locateHandlers[MODE_SINGLE_DEC] = locateFromSingleDec;
+locateHandlers[MODE_DUAL_DEC]   = locateFromDualDec;
+locateHandlers[MODE_DMS_BOXES]  = locateFromDmsBoxes;
+locateHandlers[MODE_SINGLE_DMS] = locateFromSingleDms;
