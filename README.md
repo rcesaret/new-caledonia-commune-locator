@@ -33,6 +33,7 @@ python -m http.server 8000
 
 * Enter coordinates as `-21.5, 165.5` (decimal degrees); the app returns the commune via point-in-polygon.
 * Or type a commune name (case/diacritic-insensitive) to zoom and popup the boundary.
+* Use the 🐌 button to toggle lazy loading of commune polygons.
 
 ## Development Notes
 

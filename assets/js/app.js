@@ -17,6 +17,7 @@ let map;
 let communeLayer;
 let highlightLayer;
 let darkMode = false;
+let lazyLoading = false; // if true, polygons load only when needed
 
 // A lookup table mapping normalised commune names (lowercase with
 // apostrophes removed) to their corresponding Wikipedia pages.  When
@@ -286,6 +287,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       lightTiles.addTo(map);
     }
   });
+  // Lazy loading toggle
+  const lazyBtn = document.getElementById('lazyToggle');
+  if (lazyBtn) {
+    lazyBtn.addEventListener('click', () => {
+      lazyLoading = !lazyLoading;
+      if (lazyLoading) {
+        if (communeLayer) map.removeLayer(communeLayer);
+      } else {
+        if (communeLayer) {
+          map.addLayer(communeLayer);
+        } else {
+          loadCommuneLayer().catch((err) => {
+            console.error(err);
+            document.getElementById('a11yMsg').textContent = 'Unable to load commune boundaries';
+          });
+        }
+      }
+    });
+  }
   // Add the custom info control to the map
   const InfoControl = L.Control.extend({
     onAdd: function () {
@@ -300,6 +320,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <li>Click any commune on the map to display its name and a link to its Wikipedia page.</li>
             <li>Use the <strong>🔗 Copy Link</strong> button to generate a shareable permalink for the current coordinates.</li>
             <li>Toggle dark mode with the <strong>🌙</strong> button.</li>
+            <li>Toggle lazy loading with the <strong>🐌</strong> button.</li>
             <li>Keyboard shortcuts: Ctrl+L (or Cmd+L) focuses the longitude field; Enter triggers a search.</li>
           </ol>
           <hr>
@@ -389,10 +410,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       latBox.style.display = '';
     }
   });
-  // Immediately load commune boundaries (lazy load will cache) but
-  // do not await so the UI remains responsive.
-  loadCommuneLayer().catch((err) => {
-    console.error(err);
-    document.getElementById('a11yMsg').textContent = 'Unable to load commune boundaries';
-  });
+  // Load commune boundaries on startup unless lazy loading is enabled.
+  if (!lazyLoading) {
+    loadCommuneLayer().catch((err) => {
+      console.error(err);
+      document.getElementById('a11yMsg').textContent = 'Unable to load commune boundaries';
+    });
+  }
 });
