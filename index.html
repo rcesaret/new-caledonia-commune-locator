@@ -43,96 +43,101 @@
       reload the page.
     </div>
 
-    <!-- Layer & style panel -->
+    <!-- Layer & style panel redesigned as hierarchical tree -->
     <div id="layerPanel" class="layer-panel" aria-label="Layer controls">
       <button id="toggleLayerPanel" type="button" title="Collapse layer panel">
         &laquo;
       </button>
       <div id="layerContent">
-        <h3>Layers</h3>
-        <label
-          ><input id="toggleLabels" type="checkbox" checked /> Commune
-          labels</label
-        >
-        <label
-          ><input id="togglePolygons" type="checkbox" checked /> Commune
-          polygons</label
-        >
-        <label><input id="darkModeToggle" type="checkbox" /> Dark mode</label>
-        <div class="style-group">
-          <label
-            >Border <input id="borderColor" type="color" value="#228B22"
-          /></label>
-          <label
-            >Opacity
-            <input
-              id="borderOpacity"
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value="1"
-          /></label>
+        <!-- Commune polygons section -->
+        <div class="layer-item">
+          <div class="layer-header" tabindex="0">
+            <span>Commune polygons</span>
+            <button
+              type="button"
+              class="toggle-item-btn"
+              aria-expanded="true"
+              aria-controls="communeContent"
+              aria-label="Toggle commune polygons section"
+            >▼</button>
+          </div>
+          <div id="communeContent" class="layer-content">
+            <label><input id="toggleLabels" type="checkbox" checked /> Commune labels</label>
+            <label><input id="togglePolygons" type="checkbox" checked /> Commune polygons</label>
+            <div class="style-group">
+              <label>Border <input id="borderColor" type="color" value="#228B22" /></label>
+              <label>Opacity
+                <input id="borderOpacity" type="range" min="0" max="1" step="0.1" value="1" />
+              </label>
+            </div>
+            <div class="style-group">
+              <label>Fill <input id="fillColor" type="color" value="#66BB66" /></label>
+              <label>Opacity
+                <input id="fillOpacity" type="range" min="0" max="1" step="0.05" value="0.35" />
+              </label>
+            </div>
+            <div class="style-group">
+              <label>Label color <input id="labelTextColor" type="color" value="#111827" /></label>
+              <label>Size <input id="labelTextSize" type="number" value="14" min="8" max="24" /></label>
+            </div>
+            <div class="style-group">
+              <label>Font <input id="labelFont" type="text" value="sans-serif" /></label>
+              <label>Bg <input id="labelBg" type="checkbox" checked /></label>
+            </div>
+            <div class="style-group">
+              <label>Bg color <input id="labelBgColor" type="color" value="#ffffff" /></label>
+              <label>Bg opacity
+                <input id="labelBgOpacity" type="range" min="0" max="1" step="0.05" value="1" />
+              </label>
+            </div>
+          </div>
         </div>
-        <div class="style-group">
-          <label
-            >Fill <input id="fillColor" type="color" value="#66BB66"
-          /></label>
-          <label
-            >Opacity
-            <input
-              id="fillOpacity"
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value="0.35"
-          /></label>
+
+        <!-- Points section -->
+        <div class="layer-item">
+          <div class="layer-header" tabindex="0">
+            <span>Points</span>
+            <button
+              type="button"
+              class="toggle-item-btn"
+              aria-expanded="true"
+              aria-controls="pointsContent"
+              aria-label="Toggle points section"
+            >▼</button>
+          </div>
+          <div id="pointsContent" class="layer-content">
+            <label><input id="togglePoints" type="checkbox" checked /> Show points</label>
+            <div id="pointsList"></div>
+            <div class="points-actions">
+              <button id="addPointBtn" type="button">Add Point (click)</button>
+              <button id="exportPointsBtn" type="button">Export Points</button>
+            </div>
+          </div>
         </div>
-        <div class="style-group">
-          <label
-            >Label color
-            <input id="labelTextColor" type="color" value="#111827"
-          /></label>
-          <label
-            >Size
-            <input id="labelTextSize" type="number" value="14" min="8" max="24"
-          /></label>
+
+        <!-- Basemap section -->
+        <div class="layer-item">
+          <div class="layer-header" tabindex="0">
+            <span>Basemap</span>
+            <button
+              type="button"
+              class="toggle-item-btn"
+              aria-expanded="true"
+              aria-controls="basemapContent"
+              aria-label="Toggle basemap section"
+            >▼</button>
+          </div>
+          <div id="basemapContent" class="layer-content">
+            <fieldset id="basemapOptions">
+              <legend class="sr-only">Basemap selection</legend>
+              <label><input type="radio" name="basemap" value="osm" checked /> OSM Default</label>
+              <label><input type="radio" name="basemap" value="gmap" /> Google Map</label>
+              <label><input type="radio" name="basemap" value="gsat" /> Satellite</label>
+              <label><input type="radio" name="basemap" value="gter" /> Terrain</label>
+            </fieldset>
+            <label><input id="darkModeToggle" type="checkbox" /> Dark mode</label>
+          </div>
         </div>
-        <div class="style-group">
-          <label
-            >Font <input id="labelFont" type="text" value="sans-serif"
-          /></label>
-          <label>Bg <input id="labelBg" type="checkbox" checked /></label>
-        </div>
-        <div class="style-group">
-          <label
-            >Bg color <input id="labelBgColor" type="color" value="#ffffff"
-          /></label>
-          <label
-            >Bg opacity
-            <input
-              id="labelBgOpacity"
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value="1"
-          /></label>
-        </div>
-        <label
-          >Basemap
-          <select id="baseMapSelect">
-            <option value="osm">OSM Default</option>
-            <option value="gmap">Google Map Default</option>
-            <option value="gsat">Google Satellite</option>
-            <option value="gter">Google Terrain</option>
-            <option value="dark">Carto Dark</option>
-          </select>
-        </label>
-        <hr />
-        <button id="addPointBtn" type="button">Add Point</button>
-        <button id="exportPointsBtn" type="button">Export Points</button>
       </div>
     </div>
 
@@ -190,15 +195,20 @@
         </button>
       </div>
 
-      <!-- Single decimal input (lat,lng or commune name) -->
+      <!-- Single decimal input (lat,lng or lon,lat; commune name) -->
       <div id="singleDecInputs" class="mode-inputs">
         <input
           id="singleDecInput"
           type="text"
           inputmode="text"
-          placeholder="lat,lng or commune name"
-          aria-label="Enter lat,lng or commune name"
+          placeholder="lat,lng or lon,lat or commune name"
+          aria-label="Enter lat,lng or lon,lat or commune name"
         />
+        <button
+          id="flipSingleBtn"
+          type="button"
+          title="Flip latitude and longitude in input"
+        >Flip</button>
       </div>
 
       <!-- Dual decimal input (two numeric fields + flip) -->
@@ -307,6 +317,12 @@
       <button id="permalinkBtn" type="button" title="Copy permalink">
         Permalink
       </button>
+      <button id="selectModeBtn" type="button" title="Toggle selection tool">
+        Select
+      </button>
+      <button id="clearSelectionBtn" type="button" title="Remove selection">
+        Clear Selection
+      </button>
       <span id="status" class="sr-only" aria-live="polite"></span>
     </div>
 
@@ -316,23 +332,37 @@
     <div id="infoBubble" class="info-bubble">
       <button id="toggleInfo" type="button">INFO &amp; USER GUIDE</button>
       <div id="infoContent" hidden>
-        <p>
-          Locate communes by entering coordinates or clicking the map. Style
-          polygon borders and labels, add custom points and export them as
-          GeoJSON.
-        </p>
+        <h4>Input modes</h4>
         <ul>
-          <li>Toggle dark mode and switch base maps.</li>
-          <li>Customize label text color, size and background.</li>
-          <li>Copy a permalink to share the current view.</li>
+          <li><strong>Dec (1)</strong>: Enter <em>lat,lng</em> or <em>lon,lat</em> separated by a comma. If the order is reversed, use the flip button next to the input to swap.</li>
+          <li><strong>Dec (2)</strong>: Enter latitude and longitude separately. A flip button swaps the two fields.</li>
+          <li><strong>DMS Boxes</strong>: Enter degrees, minutes and seconds for latitude and longitude. The cursor automatically moves to the next field.</li>
+          <li><strong>DMS (1)</strong>: Paste a complete DMS string like <code>20°44'19.7"S 164°47'41.6"E</code>.</li>
+        </ul>
+        <h4>Adding &amp; editing points</h4>
+        <ul>
+          <li>Use <em>Add Point (click)</em> in the points section to click on the map and create a point. Alternatively, press <em>Add Point</em> next to the locate button to use the entered coordinates.</li>
+          <li>All points appear under the <strong>Points</strong> section. Toggle their visibility or expand each item to edit the label, colour, opacity, shape and coordinates, or delete it.</li>
+          <li>Export all points as a GeoJSON file using <em>Export Points</em>.</li>
+        </ul>
+        <h4>Layer &amp; basemap controls</h4>
+        <ul>
+          <li>Adjust commune label and polygon visibility, colours and opacities in the <strong>Commune polygons</strong> section.</li>
+          <li>Choose between OSM, Google map, satellite or terrain basemaps, and toggle dark mode. When dark mode is on, basemap selection is disabled.</li>
+        </ul>
+        <h4>Select tool</h4>
+        <ul>
+          <li>Toggle the <em>Select</em> button to enable selection mode. Click a commune polygon to highlight it and open a popup with a link to its Wikipedia page.</li>
+          <li>Click a point to select it: its popup shows the label, coordinates and assigned commune, and its entry in the points list is expanded.</li>
+          <li>Use <em>Clear Selection</em> to remove the current highlight.</li>
+        </ul>
+        <h4>Permalink &amp; sharing</h4>
+        <ul>
+          <li>Copy a permalink to your clipboard via the <em>Permalink</em> button. The URL stores the current view (center, zoom, basemap and overlays) and the last located point.</li>
         </ul>
         <p class="credits">
           Created by Rudolf Cesaretti &amp; Maja Canavan —
-          <a
-            href="https://github.com/rcesaret/new-caledonia-commune-locator"
-            target="_blank"
-            >GitHub</a
-          >
+          <a href="https://github.com/rcesaret/new-caledonia-commune-locator" target="_blank">GitHub</a>
         </p>
       </div>
     </div>

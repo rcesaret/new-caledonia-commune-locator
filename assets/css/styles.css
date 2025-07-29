@@ -199,6 +199,131 @@ body,
 .layer-panel.collapsed #layerContent {
   display: none;
 }
+.layer-panel .layer-item {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+.layer-panel .layer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 2px 0;
+}
+.layer-panel .toggle-item-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+.layer-panel .toggle-item-btn[aria-expanded="false"] {
+  transform: rotate(-90deg);
+}
+.layer-panel .layer-content {
+  padding-left: 8px;
+}
+
+/* Points list styling */
+#pointsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.point-item {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px;
+  background: #f8fafc;
+}
+.point-item.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
+.point-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.point-header span {
+  flex-grow: 1;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.point-header button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+}
+.point-edit {
+  margin-top: 6px;
+  padding-left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.point-edit label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.point-edit input[type="text"],
+.point-edit input[type="number"],
+.point-edit input[type="color"],
+.point-edit input[type="range"],
+.point-edit select {
+  flex-grow: 1;
+  height: 28px;
+  font-size: 13px;
+}
+.point-edit input[type="range"] {
+  height: auto;
+}
+.point-edit button {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 4px 6px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #f1f5f9;
+  cursor: pointer;
+  font-size: 13px;
+}
+.point-edit button:hover {
+  background: #e2e8f0;
+}
+.points-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* Selection mode cursor */
+.selection-mode #map {
+  cursor: crosshair;
+}
+
+/* Dark mode adjustments for new elements */
+body.dark-mode .layer-panel .point-item {
+  background: #374151;
+  border-color: #4b5563;
+}
+body.dark-mode .layer-panel .point-item.selected {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.5);
+}
+body.dark-mode .point-edit button {
+  background: #4b5563;
+  border-color: #6b7280;
+  color: #e5e7eb;
+}
 .layer-panel button#toggleLayerPanel {
   position: absolute;
   top: 8px;
