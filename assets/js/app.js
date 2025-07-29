@@ -396,16 +396,17 @@ function setLayerPanelCollapsed(collapsed) {
   );
   focusables.forEach((el) => {
     if (collapsed) {
-      el.dataset.prevTab = el.getAttribute("tabindex");
-      el.setAttribute("tabindex", "-1");
-    } else {
-      if (el.dataset.prevTab) {
-        el.setAttribute("tabindex", el.dataset.prevTab);
-        delete el.dataset.prevTab;
-      } else {
-        el.removeAttribute("tabindex");
-      }
-    }
+          el.dataset.prevTab = el.getAttribute("tabindex");
+          el.setAttribute("tabindex", "-1");
+        }
+    else if (el.dataset.prevTab) {
+            el.setAttribute("tabindex", el.dataset.prevTab);
+            delete el.dataset.prevTab;
+          }
+    else {
+            el.removeAttribute("tabindex");
+          }
+
   });
 }
 
