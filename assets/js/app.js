@@ -426,7 +426,7 @@ function identifyAt(lat, lng, dropMarker = false) {
     // Enhanced popup with coordinates and commune info
     const coordText = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     const fullPopupText = `${coordText}<br>${popupText}`;
-    activeMarker.bindPopup(fullPopupText).openPopup();
+    activeMarker.bindPopup(fullPopupText, { className: 'coordinate-popup' }).openPopup();
     
     // Ensure marker is visible by bringing it to front
     activeMarker.setZIndexOffset(1000);
