@@ -245,7 +245,7 @@ async function locatePoint(lat, lon) {
 function performSearch() {
   const lonInput = document.getElementById('lonBox');
   const latInput = document.getElementById('latBox');
-  setA11yMsg('');
+  setA11yMsg('\u00A0');
   const lon = parseFloat(lonInput.value);
   const lat = parseFloat(latInput.value);
   if (isFinite(lat) && isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
