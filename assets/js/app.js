@@ -44,7 +44,7 @@ const wiki = {
   'kaala-gomen': 'https://en.wikipedia.org/wiki/Kaala-Gomen',
   'koumac': 'https://en.wikipedia.org/wiki/Koumac',
   'poum': 'https://en.wikipedia.org/wiki/Poum',
-  'bélep': 'https://en.wikipedia.org/wiki/Bélep',
+  'belep': 'https://en.wikipedia.org/wiki/Belep',
   'ouégoa': 'https://en.wikipedia.org/wiki/Ouégoa',
   'pouébo': 'https://en.wikipedia.org/wiki/Pouébo',
   'hienghène': 'https://en.wikipedia.org/wiki/Hiengh%C3%A8ne',
@@ -192,7 +192,8 @@ async function locatePoint(lat, lon) {
   await loadCommuneLayer();
   if (!communeLayer) return;
   // Use leaflet‑pip to find all polygons containing the point.
-  const matches = leafletPip.pointInLayer([lat, lon], communeLayer, true);
+  // leaflet-pip expects [lon, lat] order for the coordinate array
+  const matches = leafletPip.pointInLayer([lon, lat], communeLayer, true);
   if (matches.length > 0) {
     const feature = matches[0].feature;
     // Remove previous highlight
