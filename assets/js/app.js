@@ -22,15 +22,20 @@ const OFFLINE_TILE =
 // if network access is blocked.
 async function createTileLayer() {
   try {
-    const resp = await fetch('https://tile.openstreetmap.org/0/0/0.png', { mode: 'no-cors' });
-    if (resp.ok || resp.type === 'opaque') {
+    const resp = await fetch('https://tile.openstreetmap.org/0/0/0.png', {
+      mode: 'no-cors',
+      signal: AbortSignal.timeout(5000) // 5-second timeout
+    });
+    // For 'no-cors', a successful network request results in an 'opaque' response.
+    if (resp.type === 'opaque') {
       return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '\u00A9 OpenStreetMap contributors'
       });
     }
+    console.warn(`Unexpected response from tile server: type ${resp.type}`);
   } catch (err) {
-    console.warn('Tile server unreachable:', err);
+    console.warn('Tile server unreachable, using offline tile:', err.message);
   }
   return L.tileLayer(OFFLINE_TILE, { maxZoom: 19, attribution: '' });
 }
