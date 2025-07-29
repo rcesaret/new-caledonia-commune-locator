@@ -541,7 +541,7 @@ map.on('click', (e) => {
       try {
         const hits = leafletPip.pointInLayer([e.latlng.lng, e.latlng.lat], communeLayer, true);
         if (hits.length) communeName = hits[0].feature?.properties?.name || null;
-      } catch {}
+      } catch (err) { console.error('Point-in-polygon check failed:', err); }
     }
     points.push({
       type: 'Feature',
