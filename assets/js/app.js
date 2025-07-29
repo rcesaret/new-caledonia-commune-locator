@@ -134,8 +134,30 @@ async function loadCommuneLayer() {
   if (communeLayer) return communeLayer;
   // Use embedded data if available to avoid fetch failures
   if (typeof COMMUNES_DATA !== 'undefined') {
-    communeLayer = L.geoJSON(COMMUNES_DATA, { onEachFeature, style: defaultStyle }).addTo(map);
-    return communeLayer;
+    // Check if COMMUNES_DATA is a non-empty object/array and try to add to map
+    let isValid = false;
+    if (Array.isArray(COMMUNES_DATA) && COMMUNES_DATA.length > 0) {
+      isValid = true;
+    } else if (
+      typeof COMMUNES_DATA === 'object' &&
+      COMMUNES_DATA !== null &&
+      (
+        (Array.isArray(COMMUNES_DATA.features) && COMMUNES_DATA.features.length > 0) ||
+        (COMMUNES_DATA.type && COMMUNES_DATA.type === 'FeatureCollection')
+      )
+    ) {
+      isValid = true;
+    }
+    if (isValid) {
+      try {
+        communeLayer = L.geoJSON(COMMUNES_DATA, { onEachFeature, style: defaultStyle }).addTo(map);
+        return communeLayer;
+      } catch (e) {
+        console.error('Failed to load embedded COMMUNES_DATA:', e);
+      }
+    } else {
+      console.warn('COMMUNES_DATA is present but empty or malformed, skipping embedded data.');
+    }
   }
   try {
     // Attempt to fetch the local copy first.
